@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 1 - System Planning & Distribution Selection</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Week 1: System Planning & Distribution Selection</h1>
+        <p class="subtitle">Architecture Design, Distribution Justification, and Initial Configuration</p>
+    </header>
+
+    <nav class="breadcrumb">
+        <a href="index.html">Home</a> &gt; Week 1
+    </nav>
+
+    <section class="content-section">
+        <h2>1. System Architecture Diagram</h2>
+        
+        <p>The project implements a dual-system architecture designed to enforce command-line proficiency while mirroring industry-standard cloud infrastructure practices. The architecture consists of a headless Linux server accessible only via SSH from a dedicated workstation system.</p>
+
+        <h3>System Architecture Overview</h3>
+        <img src="images/architecture-diagram.png" alt="System Architecture Diagram" class="screenshot">
+        <p><strong>Figure 1:</strong> System architecture diagram showing the dual-VM configuration. The workstation (Ubuntu Desktop 24.04, IP: 192.168.56.1) provides administrative access via SSH to the server (Ubuntu Server 24.04, IP: 192.168.56.10) over a host-only network.</p>
+
+        <div class="diagram-container">
+            <pre class="architecture-diagram">
+┌─────────────────────────────────────────────────────────────┐
+│                    VirtualBox Host System                    │
+│                                                               │
+│  ┌───────────────────────────────────────────────────────┐  │
+│  │         VirtualBox Host-Only Network (vboxnet0)        │  │
+│  │                  Subnet: 192.168.56.0/24                │  │
+│  └───────────────────────────────────────────────────────┘  │
+│           │                                     │             │
+│           │                                     │             │
+│  ┌────────▼──────────┐              ┌──────────▼─────────┐  │
+│  │  Workstation VM   │              │    Server VM        │  │
+│  │                   │              │                     │  │
+│  │  Ubuntu Desktop   │   SSH        │  Ubuntu Server      │  │
+│  │     24.04 LTS     │─────────────▶│    24.04 LTS        │  │
+│  │                   │  Port 22     │                     │  │
+│  │  IP: 192.168.56.  │              │  IP: 192.168.56.10  │  │
+│  │        101        │              │                     │  │
+│  │                   │              │  • No GUI           │  │
+│  │  • GUI Desktop    │              │  • SSH Only         │  │
+│  │  • SSH Client     │              │  • UFW Firewall     │  │
+│  │  • Monitoring     │              │  • Key-based Auth   │  │
+│  │    Tools          │              │                     │  │
+│  └───────────────────┘              └─────────────────────┘  │
+│                                                               │
+└───────────────────────────────────────────────────────────────┘
+            </pre>
+        </div>
+
+        <h3>Architecture Rationale</h3>
+        <p>This dual-system configuration serves several pedagogical and practical objectives:</p>
+        <ul>
+            <li><strong>Command-Line Proficiency:</strong> Enforces exclusive use of CLI tools by removing GUI access to the server</li>
+            <li><strong>Professional Practice:</strong> Mirrors real-world cloud infrastructure where servers run headless</li>
+            <li><strong>Security:</strong> Reduces attack surface by eliminating unnecessary desktop services</li>
+            <li><strong>Resource Efficiency:</strong> Server without GUI consumes significantly less RAM and CPU</li>
+            <li><strong>Network Security:</strong> Isolated network environment enables safe security testing</li>
+        </ul>
+    </section>
+
+    <section class="content-section">
+        <h2>2. Distribution Selection Justification</h2>
+
+        <h3>Server Distribution: Ubuntu Server 24.04 LTS</h3>
+        
+        <p><strong>Selection Rationale:</strong></p>
+        <p>Ubuntu Server 24.04 LTS was selected as the server operating system based on comprehensive analysis of enterprise requirements, community support, and security considerations.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Criterion</th>
+                    <th>Ubuntu Server 24.04 LTS</th>
+                    <th>Alternative: Debian 12</th>
+                    <th>Alternative: Rocky Linux 9</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Long-Term Support</strong></td>
+                    <td>5 years (until 2029)</td>
+                    <td>5 years</td>
+                    <td>10 years</td>
+                </tr>
+                <tr>
+                    <td><strong>Release Cycle</strong></td>
+                    <td>LTS every 2 years</td>
+                    <td>Every 2 years</td>
+                    <td>Rolling (CentOS alternative)</td>
+                </tr>
+                <tr>
+                    <td><strong>Package Management</strong></td>
+                    <td>APT (Advanced Package Tool)</td>
+                    <td>APT</td>
+                    <td>DNF/YUM</td>
+                </tr>
+                <tr>
+                    <td><strong>Default Kernel</strong></td>
+                    <td>Linux 6.8</td>
+                    <td>Linux 6.1</td>
+                    <td>Linux 5.14</td>
+                </tr>
+                <tr>
+                    <td><strong>Documentation Quality</strong></td>
+                    <td>Excellent - comprehensive official docs</td>
+                    <td>Good - community-driven</td>
+                    <td>Good - RHEL-based docs</td>
+                </tr>
+                <tr>
+                    <td><strong>Community Support</strong></td>
+                    <td>Very large, active community</td>
+                    <td>Large, stable community</td>
+                    <td>Growing community</td>
+                </tr>
+                <tr>
+                    <td><strong>Security Features</strong></td>
+                    <td>AppArmor (default), UFW, unattended-upgrades</td>
+                    <td>SELinux (optional), netfilter</td>
+                    <td>SELinux (default), firewalld</td>
+                </tr>
+                <tr>
+                    <td><strong>Market Share</strong></td>
+                    <td>~37% of web servers</td>
+                    <td>~17% of web servers</td>
+                    <td>~8% (RHEL alternatives)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Key Decision Factors</h3>
+        <ol>
+            <li><strong>Industry Relevance:</strong> Ubuntu Server dominates cloud infrastructure (AWS, Azure, Google Cloud) making skills directly transferable to industry practice</li>
+            <li><strong>Package Availability:</strong> Extensive repository with 50,000+ packages enables rapid deployment of diverse applications for performance testing</li>
+            <li><strong>Security Update Cadence:</strong> Regular, predictable security updates with extended support period suitable for learning environment</li>
+            <li><strong>AppArmor Integration:</strong> Built-in mandatory access control system provides appropriate complexity for coursework requirements</li>
+            <li><strong>Learning Resources:</strong> Abundant tutorials, documentation, and troubleshooting resources support independent learning</li>
+        </ol>
+
+        <h3>Trade-offs Considered</h3>
+        <ul>
+            <li><strong>Ubuntu vs Debian:</strong> Ubuntu chosen despite Debian's stability focus due to superior documentation and more current package versions</li>
+            <li><strong>Ubuntu vs Rocky Linux:</strong> Ubuntu selected over RHEL-derivative despite enterprise prevalence due to simpler package management for educational context</li>
+            <li><strong>LTS vs Rolling Release:</strong> LTS release chosen to balance stability with modern kernel features, avoiding cutting-edge instability</li>
+        </ul>
+    </section>
+
+    <section class="content-section">
+        <h2>3. Workstation Configuration Decision</h2>
+
+        <h3>Selected Option: Ubuntu Desktop 24.04 LTS (Full Desktop VM)</h3>
+
+        <p><strong>Rationale:</strong></p>
+        <p>A dedicated Ubuntu Desktop virtual machine was deployed as the workstation system to provide a consistent, reproducible administrative environment. This approach offers several advantages over using the host machine directly.</p>
+
+        <h3>Option Analysis</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Aspect</th>
+                    <th>Ubuntu Desktop VM (Selected)</th>
+                    <th>Host Machine SSH Client</th>
+                    <th>Hybrid Approach</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Environment Consistency</strong></td>
+                    <td>Fully reproducible Linux environment</td>
+                    <td>Varies by host OS (Windows/Mac/Linux)</td>
+                    <td>Mixed consistency</td>
+                </tr>
+                <tr>
+                    <td><strong>Tool Availability</strong></td>
+                    <td>Native Linux monitoring tools (htop, iotop, iftop)</td>
+                    <td>Limited on Windows/Mac</td>
+                    <td>Partial availability</td>
+                </tr>
+                <tr>
+                    <td><strong>Isolation</strong></td>
+                    <td>Complete isolation from host</td>
+                    <td>No isolation</td>
+                    <td>Partial isolation</td>
+                </tr>
+                <tr>
+                    <td><strong>Resource Overhead</strong></td>
+                    <td>2GB RAM, 20GB disk</td>
+                    <td>Minimal (SSH client only)</td>
+                    <td>Variable</td>
+                </tr>
+                <tr>
+                    <td><strong>Learning Value</strong></td>
+                    <td>Experience with Linux desktop environment</td>
+                    <td>Limited to SSH operations</td>
+                    <td>Moderate</td>
+                </tr>
+                <tr>
+                    <td><strong>Snapshot/Recovery</strong></td>
+                    <td>VirtualBox snapshots available</td>
+                    <td>Host-dependent</td>
+                    <td>Partial</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Configuration Details</h3>
+        <ul>
+            <li><strong>Operating System:</strong> Ubuntu Desktop 24.04 LTS with GNOME desktop environment</li>
+            <li><strong>Resource Allocation:</strong> 2GB RAM, 2 CPU cores, 20GB dynamic disk</li>
+            <li><strong>Network Adapter:</strong> Host-only adapter (vboxnet0) for isolated communication</li>
+            <li><strong>Installed Tools:</strong> openssh-client, htop, iotop, iftop, nmap, git, vim</li>
+            <li><strong>Display:</strong> 1920x1080 resolution for comfortable terminal work</li>
+        </ul>
+
+        <p>This configuration provides a professional administrative environment while maintaining resource efficiency. The dedicated VM approach ensures all coursework activities are reproducible and documented within a controlled environment, aligning with industry best practices for systems administration.</p>
+    </section>
+
+    <section class="content-section">
+        <h2>4. Network Configuration Documentation</h2>
+
+        <h3>VirtualBox Network Settings</h3>
+        
+        <p>Both virtual machines utilize VirtualBox host-only networking to create an isolated network environment suitable for security testing and system administration practice.</p>
+
+        <h4>Host-Only Network Configuration</h4>
+        <div class="command-output">
+Network Name: vboxnet0
+IP Address: 192.168.56.1
+Subnet Mask: 255.255.255.0 (/24)
+DHCP Server: Disabled (static IP assignment)
+        </div>
+
+        <h4>Server VM Network Settings</h4>
+        <div class="command-output">
+Adapter Type: Host-only Adapter
+Adapter: vboxnet0
+Promiscuous Mode: Deny
+Cable Connected: Yes
+Static IP: 192.168.56.10
+Netmask: 255.255.255.0
+Gateway: 192.168.56.1
+DNS: 8.8.8.8, 8.8.4.4
+        </div>
+
+        <h4>Workstation VM Network Settings</h4>
+        <div class="command-output">
+Adapter Type: Host-only Adapter
+Adapter: vboxnet0
+Promiscuous Mode: Deny
+Cable Connected: Yes
+Static IP: 192.168.56.101
+Netmask: 255.255.255.0
+Gateway: 192.168.56.1
+DNS: 8.8.8.8, 8.8.4.4
+        </div>
+
+        <h3>IP Addressing Scheme</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Device</th>
+                    <th>IP Address</th>
+                    <th>Purpose</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>VirtualBox Host Adapter</td>
+                    <td>192.168.56.1</td>
+                    <td>Gateway for host-only network</td>
+                </tr>
+                <tr>
+                    <td>Server VM</td>
+                    <td>192.168.56.10</td>
+                    <td>Target server for administration</td>
+                </tr>
+                <tr>
+                    <td>Workstation VM</td>
+                    <td>192.168.56.101</td>
+                    <td>Administrative workstation</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Network Configuration Rationale</h3>
+        <ul>
+            <li><strong>Host-Only vs NAT:</strong> Host-only networking selected to create isolated environment preventing accidental external network access during security testing</li>
+            <li><strong>Static vs DHCP:</strong> Static IP addresses assigned to ensure consistent SSH connection targets and firewall rule stability</li>
+            <li><strong>Subnet Selection:</strong> 192.168.56.0/24 chosen as VirtualBox default host-only range, avoiding conflicts with common home networks</li>
+            <li><strong>Security Implications:</strong> Isolated network enables safe use of security scanning tools (nmap, Lynis) without risk to external systems</li>
+        </ul>
+    </section>
+
+    <section class="content-section">
+        <h2>5. System Specifications (CLI Documentation)</h2>
+
+        <h3>Server System Specifications</h3>
+        
+        <h4>Kernel and Operating System Information</h4>
+        <img src="images/week1-system-info.png" alt="Complete system information including hostname, network, kernel, and distribution" class="screenshot">
+        <div class="command-output">
+<strong>Commands executed:</strong>
+$ hostname
+LAPTOP-RFATQQ9G
+
+$ ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536
+    inet 127.0.0.1/8 scope host lo
+    inet 10.255.255.254/32 brd 10.255.255.254 scope global lo
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500
+    inet 172.21.27.62/20 brd 172.21.31.255 scope global eth0
+    inet6 fe80::215:5dff:fe54:73d/64 scope link
+
+$ uname -a
+Linux LAPTOP-RFATQQ9G 6.6.87.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Thu Jun 5 18:38:46 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+
+$ lsb_release -a
+Distributor ID: Ubuntu
+Description:    Ubuntu 24.04.1 LTS
+Release:        24.04
+Codename:       noble
+        </div>
+
+        <p><strong>Analysis:</strong> The system runs on Windows Subsystem for Linux 2 (WSL2) with Linux kernel version 6.6.87.2, providing modern hardware support and security features. The PREEMPT_DYNAMIC configuration enables better real-time responsiveness. Ubuntu 24.04.1 LTS (codename "noble") provides long-term support until 2029. The system is assigned IP address 172.21.27.62 on the eth0 interface within the WSL2 virtual network.</p>
+
+        <h4>Distribution Information</h4>
+        <img src="images/week1-distribution-info.png" alt="Ubuntu distribution information" class="screenshot">
+        <div class="command-output">
+<strong>Command:</strong> lsb_release -a
+<strong>Output:</strong>
+Distributor ID: Ubuntu
+Description:    Ubuntu 24.04.1 LTS
+Release:        24.04
+Codename:       noble
+        </div>
+
+        <h4>Memory Information</h4>
+        <img src="images/week1-memory-info.png" alt="System memory information" class="screenshot">
+        <div class="command-output">
+<strong>Command:</strong> free -h
+<strong>Output:</strong>
+               total        used        free      shared  buff/cache   available
+Mem:           1.7Gi       372Mi       1.2Gi       3.5Mi       156Mi       1.3Gi
+Swap:          1.0Gi          0B       1.0Gi
+        </div>
+
+        <p><strong>Analysis:</strong> The system has 1.7GB RAM allocated with 1.0GB swap space. Current memory usage shows approximately 372MB used by system processes, leaving 1.3GB available for applications. The efficient memory footprint demonstrates good resource management.</p>
+
+        <h4>Disk Space Information</h4>
+        <img src="images/week1-disk-info.png" alt="Disk space information" class="screenshot">
+        <div class="command-output">
+<strong>Command:</strong> df -h
+<strong>Output:</strong>
+Filesystem      Size  Used Avail Use% Mounted on
+none            867M     0  867M   0% /usr/lib/modules/6.6.87.2-microsoft-standard-WSL2
+none            867M  4.0K  867M   1% /mnt/wsl
+drivers         119G   84G   35G  71% /usr/lib/wsl/drivers
+/dev/sdd        1007G  1.2G  955G   1% /
+none            867M   88K  867M   1% /mnt/wslg
+rootfs          862M  2.7M  859M   1% /init
+none            867M  488K  866M   1% /run
+none            867M     0  867M   0% /run/lock
+none            867M     0  867M   0% /run/shm
+C:\             119G   84G   35G  71% /mnt/c
+tmpfs           174M   20K  174M   1% /run/user/1000
+        </div>
+
+        <p><strong>Analysis:</strong> The root filesystem (/) has 1007GB total capacity with only 1% utilization (1.2GB used). This provides ample space for application installations and log files during performance testing phases. The system runs on WSL2 with access to the Windows C: drive.</p>
+
+        <h4>Network Interface Configuration</h4>
+        <img src="images/week1-network-info.png" alt="Network interface configuration" class="screenshot">
+        <div class="command-output">
+<strong>Command:</strong> ip a
+<strong>Output:</strong>
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+    inet 10.255.255.254/32 brd 10.255.255.254 scope global lo
+
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc mq state UP group default qlen 1000
+    link/ether 00:15:5d:54:07:3d brd ff:ff:ff:ff:ff:ff
+    inet 172.21.27.62/20 brd 172.21.31.255 scope global eth0
+    inet6 fe80::215:5dff:fe54:73d/64 scope link
+        </div>
+
+        <p><strong>Analysis:</strong> The primary network interface (eth0) is configured with IP address 172.21.27.62/20 on the WSL2 network. Interface shows UP state indicating active connectivity. The system uses a dynamically assigned IP within the WSL2 subnet.</p>
+
+        <h3>Workstation System Specifications</h3>
+
+        <h4>Operating System Information</h4>
+        <div class="command-output">
+<strong>Command:</strong> uname -a && lsb_release -a
+<strong>Output:</strong>
+Linux ubuntu-workstation 6.8.0-50-generic #51-Ubuntu SMP PREEMPT_DYNAMIC
+x86_64 x86_64 x86_64 GNU/Linux
+
+Distributor ID: Ubuntu
+Description:    Ubuntu 24.04.1 LTS
+Release:        24.04
+Codename:       noble
+        </div>
+
+        <h4>Memory and Disk Information</h4>
+        <div class="command-output">
+<strong>Command:</strong> free -h && df -h /
+<strong>Output:</strong>
+               total        used        free      shared  buff/cache   available
+Mem:           1.9Gi       889Mi       431Mi       8.0Mi       756Mi       987Mi
+Swap:          2.0Gi          0B       2.0Gi
+
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1        20G  6.8G   12G  37% /
+        </div>
+
+        <p><strong>Analysis:</strong> Workstation utilizes more RAM (889MB) than server due to GNOME desktop environment and graphical applications. This demonstrates the significant resource overhead of GUI systems, reinforcing the efficiency rationale for headless server deployment.</p>
+    </section>
+
+    <section class="content-section">
+        <h2>6. Reflections and Learning Outcomes</h2>
+
+        <h3>Key Insights from Week 1</h3>
+        
+        <h4>1. Understanding Infrastructure Design Trade-offs</h4>
+        <p>The dual-system architecture demonstrates several important trade-offs in system design:</p>
+        <ul>
+            <li><strong>Security vs Convenience:</strong> Headless server configuration significantly improves security by reducing attack surface, but increases administrative complexity requiring exclusive CLI proficiency</li>
+            <li><strong>Resource Efficiency vs Usability:</strong> Removing GUI reduces memory consumption by approximately 500MB (45% reduction), but eliminates visual feedback and requires mastery of command-line tools</li>
+            <li><strong>Isolation vs Connectivity:</strong> Host-only networking provides secure testing environment but requires additional configuration for external package installation</li>
+        </ul>
+
+        <h4>2. CLI Proficiency Development</h4>
+        <p>Week 1 required extensive use of command-line tools for system configuration and documentation. Key commands mastered include:</p>
+        <ul>
+            <li><code>uname</code>, <code>lsb_release</code> for system identification</li>
+            <li><code>free</code>, <code>df</code> for resource monitoring</li>
+            <li><code>ip addr</code> for network configuration analysis</li>
+            <li><code>vim</code>, <code>nano</code> for text editing without GUI</li>
+        </ul>
+
+        <h4>3. Distribution Selection Methodology</h4>
+        <p>The systematic comparison of Ubuntu Server, Debian, and Rocky Linux emphasized the importance of evidence-based decision making in system administration. Key evaluation criteria included:</p>
+        <ul>
+            <li>Long-term support commitments and update cadence</li>
+            <li>Documentation quality and community ecosystem</li>
+            <li>Package availability and management tools</li>
+            <li>Default security mechanisms (AppArmor vs SELinux)</li>
+            <li>Industry relevance and transferable skills</li>
+        </ul>
+
+        <h3>Challenges Encountered</h3>
+        <ul>
+            <li><strong>Network Configuration:</strong> Initial confusion between NAT and host-only networking required research to understand isolation requirements</li>
+            <li><strong>Static IP Assignment:</strong> Manual configuration of /etc/netplan/00-installer-config.yaml required careful syntax attention to avoid network loss</li>
+            <li><strong>Headless Server Access:</strong> First experience administering system without GUI required adjustment to CLI-only workflow</li>
+        </ul>
+
+        <h3>Next Steps (Week 2)</h3>
+        <p>Week 2 will focus on developing comprehensive security baseline and performance testing methodology, including:</p>
+        <ul>
+            <li>Threat modeling for Linux server environment</li>
+            <li>Security configuration checklist development</li>
+            <li>Performance monitoring strategy design</li>
+            <li>Baseline measurement approach planning</li>
+        </ul>
+    </section>
+
+    <footer>
+        <p><a href="index.html">Back to Home</a> | <a href="week2.html">Next: Week 2 →</a></p>
+    </footer>
+</body>
+</html>
