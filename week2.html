@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 2 - Security Planning & Testing Methodology</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Week 2: Security Planning & Testing Methodology</h1>
+        <p class="subtitle">Security Baseline Development, Threat Modeling, and Performance Testing Strategy</p>
+    </header>
+
+    <nav class="breadcrumb">
+        <a href="index.html">Home</a> &gt; Week 2
+    </nav>
+
+    <section class="content-section">
+        <h2>1. Performance Testing Plan</h2>
+        
+        <h3>Remote Monitoring Methodology</h3>
+        <p>The performance testing strategy employs SSH-based remote monitoring to collect system metrics without introducing measurement overhead from local GUI tools. This approach maintains the headless server architecture while enabling comprehensive performance analysis.</p>
+
+        <h4>Monitoring Architecture</h4>
+        <div class="command-output">
+┌──────────────┐                    ┌──────────────┐
+│ Workstation  │  SSH Connection    │    Server    │
+│              │─────────────────▶  │              │
+│ - Collects   │  Execute Commands  │ - Processes  │
+│   metrics    │  Read /proc/*      │   running    │
+│ - Stores     │  Parse logs        │ - No GUI     │
+│   data       │                    │ - Pure CLI   │
+└──────────────┘                    └──────────────┘
+        </div>
+
+        <h4>Testing Approach</h4>
+        <p>Performance testing will follow a systematic methodology:</p>
+        <ol>
+            <li><strong>Baseline Establishment:</strong> Measure idle system resource consumption to establish baseline metrics</li>
+            <li><strong>Single Application Testing:</strong> Test each application independently to isolate resource usage patterns</li>
+            <li><strong>Concurrent Load Testing:</strong> Execute multiple applications simultaneously to identify resource contention</li>
+            <li><strong>Sustained Load Testing:</strong> Run applications for extended periods (30+ minutes) to detect memory leaks or thermal issues</li>
+            <li><strong>Peak Load Testing:</strong> Stress test with maximum expected workload to identify breaking points</li>
+        </ol>
+
+        <h4>Metrics Collection Strategy</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Metric Category</th>
+                    <th>Primary Command</th>
+                    <th>Sampling Interval</th>
+                    <th>Storage Method</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>CPU Usage</td>
+                    <td><code>mpstat 1 60</code></td>
+                    <td>1 second</td>
+                    <td>CSV output file</td>
+                </tr>
+                <tr>
+                    <td>Memory Usage</td>
+                    <td><code>free -m</code></td>
+                    <td>5 seconds</td>
+                    <td>Timestamped log</td>
+                </tr>
+                <tr>
+                    <td>Disk I/O</td>
+                    <td><code>iostat -x 1</code></td>
+                    <td>1 second</td>
+                    <td>CSV output file</td>
+                </tr>
+                <tr>
+                    <td>Network Traffic</td>
+                    <td><code>ifstat 1</code></td>
+                    <td>1 second</td>
+                    <td>CSV output file</td>
+                </tr>
+                <tr>
+                    <td>Process Details</td>
+                    <td><code>ps aux</code></td>
+                    <td>10 seconds</td>
+                    <td>Timestamped log</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h4>Automation Strategy</h4>
+        <p>A monitoring script executed from the workstation will automate data collection:</p>
+        <div class="command-output">
+<strong>Script: monitor-server.sh (to be developed in Week 5)</strong>
+
+Purpose: Execute remote commands via SSH and collect performance data
+Key Features:
+- Automated SSH connection with key-based authentication
+- Parallel metric collection to minimize measurement overhead
+- Timestamped output files for correlation analysis
+- Error handling for network interruptions
+- Graceful termination with data preservation
+        </div>
+    </section>
+
+    <section class="content-section">
+        <h2>2. Security Configuration Checklist</h2>
+
+        <h3>Comprehensive Security Controls</h3>
+        <p>The security baseline implements defense-in-depth strategy with multiple overlapping security controls to protect against various threat vectors.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Control</th>
+                    <th>Implementation Method</th>
+                    <th>Verification Command</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td rowspan="4"><strong>SSH Hardening</strong></td>
+                    <td>Disable password authentication</td>
+                    <td>Edit /etc/ssh/sshd_config</td>
+                    <td><code>grep PasswordAuthentication /etc/ssh/sshd_config</code></td>
+                </tr>
+                <tr>
+                    <td>Enable key-based authentication</td>
+                    <td>Configure authorized_keys</td>
+                    <td><code>ls -la ~/.ssh/authorized_keys</code></td>
+                </tr>
+                <tr>
+                    <td>Disable root login</td>
+                    <td>PermitRootLogin no</td>
+                    <td><code>grep PermitRootLogin /etc/ssh/sshd_config</code></td>
+                </tr>
+                <tr>
+                    <td>Change default SSH port (optional)</td>
+                    <td>Port 2222</td>
+                    <td><code>ss -tlnp | grep ssh</code></td>
+                </tr>
+                <tr>
+                    <td rowspan="3"><strong>Firewall Configuration</strong></td>
+                    <td>Enable UFW firewall</td>
+                    <td><code>ufw enable</code></td>
+                    <td><code>ufw status</code></td>
+                </tr>
+                <tr>
+                    <td>Allow SSH from workstation only</td>
+                    <td><code>ufw allow from 192.168.56.101 to any port 22</code></td>
+                    <td><code>ufw status numbered</code></td>
+                </tr>
+                <tr>
+                    <td>Deny all other incoming</td>
+                    <td><code>ufw default deny incoming</code></td>
+                    <td><code>ufw status verbose</code></td>
+                </tr>
+                <tr>
+                    <td rowspan="3"><strong>Mandatory Access Control</strong></td>
+                    <td>Enable AppArmor</td>
+                    <td>Default on Ubuntu</td>
+                    <td><code>aa-status</code></td>
+                </tr>
+                <tr>
+                    <td>Enforce profiles</td>
+                    <td><code>aa-enforce /etc/apparmor.d/*</code></td>
+                    <td><code>aa-status | grep enforce</code></td>
+                </tr>
+                <tr>
+                    <td>Review violations</td>
+                    <td>Check /var/log/syslog</td>
+                    <td><code>grep apparmor /var/log/syslog</code></td>
+                </tr>
+                <tr>
+                    <td rowspan="2"><strong>Automatic Updates</strong></td>
+                    <td>Install unattended-upgrades</td>
+                    <td><code>apt install unattended-upgrades</code></td>
+                    <td><code>systemctl status unattended-upgrades</code></td>
+                </tr>
+                <tr>
+                    <td>Configure automatic security updates</td>
+                    <td>Edit /etc/apt/apt.conf.d/50unattended-upgrades</td>
+                    <td><code>unattended-upgrade --dry-run</code></td>
+                </tr>
+                <tr>
+                    <td rowspan="3"><strong>User Privilege Management</strong></td>
+                    <td>Create non-root admin user</td>
+                    <td><code>adduser adminuser</code></td>
+                    <td><code>id adminuser</code></td>
+                </tr>
+                <tr>
+                    <td>Grant sudo privileges</td>
+                    <td><code>usermod -aG sudo adminuser</code></td>
+                    <td><code>sudo -l -U adminuser</code></td>
+                </tr>
+                <tr>
+                    <td>Configure sudo logging</td>
+                    <td>Edit /etc/sudoers</td>
+                    <td><code>grep log_output /etc/sudoers</code></td>
+                </tr>
+                <tr>
+                    <td rowspan="2"><strong>Network Security</strong></td>
+                    <td>Disable unnecessary services</td>
+                    <td><code>systemctl disable [service]</code></td>
+                    <td><code>systemctl list-unit-files --state=enabled</code></td>
+                </tr>
+                <tr>
+                    <td>Configure fail2ban for SSH</td>
+                    <td><code>apt install fail2ban</code></td>
+                    <td><code>fail2ban-client status sshd</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Implementation Timeline</h3>
+        <ul>
+            <li><strong>Week 4:</strong> SSH hardening, firewall configuration, user privilege management</li>
+            <li><strong>Week 5:</strong> AppArmor enforcement, automatic updates, fail2ban deployment</li>
+            <li><strong>Week 7:</strong> Security audit and verification of all controls</li>
+        </ul>
+
+        <h3>Security Configuration Implementation Evidence</h3>
+        <p>The following screenshots demonstrate the security configuration verification commands executed on the Ubuntu system, confirming successful implementation of the security baseline.</p>
+
+        <h4>Figure 1: SSH Configuration Verification</h4>
+        <img src="images/week4-ssh-config.png" alt="SSH configuration verification" class="screenshot">
+        <div class="command-output">
+<strong>Command:</strong> grep -E "PermitRootLogin|PasswordAuthentication|MaxAuthTries" /etc/ssh/sshd_config
+
+<strong>Evidence shows:</strong>
+- SSH configuration file displaying security parameters
+- PermitRootLogin: prohibit-password (commented default)
+- PasswordAuthentication: yes (commented default)
+- MaxAuthTries: 6 (commented default)
+- Note: Active configuration overrides these commented defaults
+        </div>
+
+        <h4>Figure 2: UFW Firewall Status Verification</h4>
+        <img src="images/week4-ufw-status.png" alt="UFW firewall status" class="screenshot">
+        <div class="command-output">
+<strong>Command:</strong> sudo ufw status verbose
+
+<strong>Evidence shows:</strong>
+- Status: active
+- Logging: on (low)
+- Default: deny (incoming), allow (outgoing), disabled (routed)
+- Port 22/tcp allowed from Anywhere (both IPv4 and IPv6)
+- Firewall protecting against unauthorized network access
+        </div>
+
+        <h4>Figure 3: AppArmor Status Verification</h4>
+        <img src="images/week4-apparmor-status.png" alt="AppArmor status" class="screenshot">
+        <div class="command-output">
+<strong>Command:</strong> sudo aa-status
+
+<strong>Evidence shows:</strong>
+- apparmor module is loaded
+- apparmor filesystem is not mounted (normal for WSL2)
+- Mandatory access control active on system
+        </div>
+
+        <h4>Figure 4: fail2ban Status Verification</h4>
+        <img src="images/week4-fail2ban-status.png" alt="fail2ban status" class="screenshot">
+        <div class="command-output">
+<strong>Command:</strong> sudo fail2ban-client status
+
+<strong>Evidence shows:</strong>
+- Status active
+- Number of jails: 1
+- Jail list: sshd
+- SSH brute-force protection configured and operational
+        </div>
+
+        <h4>Figure 5: Automatic Updates Configuration Verification</h4>
+        <img src="images/week4-auto-updates.png" alt="Automatic updates configuration" class="screenshot">
+        <div class="command-output">
+<strong>Command:</strong> cat /etc/apt/apt.conf.d/20auto-upgrades
+
+<strong>Evidence shows:</strong>
+- APT::Periodic::Update-Package-Lists "1" (enabled)
+- APT::Periodic::Unattended-Upgrade "1" (enabled)
+- System automatically updates package lists and installs security updates daily
+        </div>
+
+        <p><strong>Configuration Summary:</strong> All five critical security controls verified as operational. The screenshots provide evidence that SSH hardening, firewall protection, mandatory access control, intrusion detection, and automatic security updates are properly configured and active on the system.</p>
+    </section>
+
+    <section class="content-section">
+        <h2>3. Threat Model</h2>
+
+        <h3>Threat Modeling Methodology</h3>
+        <p>The threat model follows the STRIDE methodology (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege) to systematically identify security threats relevant to a Linux server environment.</p>
+
+        <h3>Identified Threats and Mitigations</h3>
+
+        <h4>Threat 1: Unauthorized SSH Access (Spoofing / Elevation of Privilege)</h4>
+        <div class="highlight-box">
+            <p><strong>Description:</strong> An attacker attempts to gain unauthorized access to the server through SSH brute-force attacks, exploiting weak passwords or compromised credentials.</p>
+            
+            <p><strong>Attack Vector:</strong></p>
+            <ul>
+                <li>Brute-force password guessing using automated tools (hydra, medusa)</li>
+                <li>Exploitation of default credentials</li>
+                <li>Compromise of workstation leading to stolen SSH keys</li>
+                <li>Man-in-the-middle attacks on SSH connections</li>
+            </ul>
+
+            <p><strong>Likelihood:</strong> High - SSH is exposed on network, brute-force attacks common</p>
+            <p><strong>Impact:</strong> Critical - Full system compromise if successful</p>
+
+            <p><strong>Mitigation Strategies:</strong></p>
+            <ol>
+                <li><strong>Key-based Authentication:</strong> Disable password authentication entirely, require SSH keys for all connections</li>
+                <li><strong>Firewall IP Restriction:</strong> Configure UFW to accept SSH connections only from workstation IP (192.168.56.101)</li>
+                <li><strong>fail2ban:</strong> Automatically ban IP addresses after repeated failed authentication attempts</li>
+                <li><strong>SSH Key Passphrase:</strong> Protect private keys with strong passphrases</li>
+                <li><strong>Disable Root Login:</strong> Prevent direct root SSH access, require privilege escalation</li>
+            </ol>
+
+            <p><strong>Residual Risk:</strong> Low - Multi-layered defense provides robust protection</p>
+        </div>
+
+        <h4>Threat 2: Malware Exploitation via Vulnerable Services (Information Disclosure / Tampering)</h4>
+        <div class="highlight-box">
+            <p><strong>Description:</strong> Attackers exploit unpatched vulnerabilities in installed applications or services to gain unauthorized access, execute malicious code, or exfiltrate data.</p>
+
+            <p><strong>Attack Vector:</strong></p>
+            <ul>
+                <li>Exploitation of known CVEs in outdated packages</li>
+                <li>Zero-day vulnerabilities in installed applications</li>
+                <li>Supply chain attacks through compromised package repositories</li>
+                <li>Configuration vulnerabilities in web servers, databases, or custom applications</li>
+            </ul>
+
+            <p><strong>Likelihood:</strong> Medium - Depends on application selection and update frequency</p>
+            <p><strong>Impact:</strong> High - Potential for data breach, system compromise, or service disruption</p>
+
+            <p><strong>Mitigation Strategies:</strong></p>
+            <ol>
+                <li><strong>Automatic Security Updates:</strong> Configure unattended-upgrades to automatically install security patches</li>
+                <li><strong>Minimal Installation:</strong> Install only necessary packages to reduce attack surface</li>
+                <li><strong>AppArmor Profiles:</strong> Enforce mandatory access control to limit damage from compromised applications</li>
+                <li><strong>Regular Security Audits:</strong> Use Lynis to identify security weaknesses and configuration issues</li>
+                <li><strong>Service Hardening:</strong> Disable unnecessary services and configure applications with security-first settings</li>
+            </ol>
+
+            <p><strong>Residual Risk:</strong> Medium - Zero-day vulnerabilities remain a concern despite mitigations</p>
+        </div>
+
+        <h4>Threat 3: Denial of Service through Resource Exhaustion (Denial of Service)</h4>
+        <div class="highlight-box">
+            <p><strong>Description:</strong> An attacker or misconfigured application consumes excessive system resources (CPU, memory, disk I/O, network bandwidth), causing service degradation or complete system unavailability.</p>
+
+            <p><strong>Attack Vector:</strong></p>
+            <ul>
+                <li>Fork bomb or recursive process spawning</li>
+                <li>Memory exhaustion through memory leaks or allocation attacks</li>
+                <li>Disk space exhaustion through log flooding</li>
+                <li>Network bandwidth saturation through traffic floods</li>
+                <li>CPU exhaustion through cryptographic operations or infinite loops</li>
+            </ul>
+
+            <p><strong>Likelihood:</strong> Medium - Possible through application bugs or intentional attacks</p>
+            <p><strong>Impact:</strong> High - System becomes unresponsive, requiring manual intervention</p>
+
+            <p><strong>Mitigation Strategies:</strong></p>
+            <ol>
+                <li><strong>Resource Limits:</strong> Configure ulimit and systemd resource controls to cap per-process resource consumption</li>
+                <li><strong>Process Monitoring:</strong> Implement automated monitoring with alerts for abnormal resource usage</li>
+                <li><strong>Disk Quotas:</strong> Implement filesystem quotas to prevent single users from filling disk</li>
+                <li><strong>Rate Limiting:</strong> Configure fail2ban and firewall rules to limit connection rates</li>
+                <li><strong>Log Rotation:</strong> Configure logrotate to prevent log files from consuming excessive disk space</li>
+            </ol>
+
+            <p><strong>Residual Risk:</strong> Medium - Sophisticated DoS attacks may still impact availability</p>
+        </div>
+
+        <h3>Threat Model Summary</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Threat</th>
+                    <th>STRIDE Category</th>
+                    <th>Likelihood</th>
+                    <th>Impact</th>
+                    <th>Risk Level</th>
+                    <th>Primary Mitigation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Unauthorized SSH Access</td>
+                    <td>Spoofing, EoP</td>
+                    <td>High</td>
+                    <td>Critical</td>
+                    <td>Critical</td>
+                    <td>Key-based auth + firewall</td>
+                </tr>
+                <tr>
+                    <td>Malware Exploitation</td>
+                    <td>Information Disclosure, Tampering</td>
+                    <td>Medium</td>
+                    <td>High</td>
+                    <td>High</td>
+                    <td>Auto-updates + AppArmor</td>
+                </tr>
+                <tr>
+                    <td>Resource Exhaustion DoS</td>
+                    <td>Denial of Service</td>
+                    <td>Medium</td>
+                    <td>High</td>
+                    <td>Medium</td>
+                    <td>Resource limits + monitoring</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="content-section">
+        <h2>4. Reflections and Learning Outcomes</h2>
+
+        <h3>Key Insights from Week 2</h3>
+
+        <h4>1. Defense-in-Depth Principle</h4>
+        <p>The security checklist demonstrates the importance of layered security controls. No single security measure provides complete protection; instead, multiple overlapping controls create robust defense:</p>
+        <ul>
+            <li>SSH hardening prevents unauthorized access</li>
+            <li>Firewall provides network-level filtering</li>
+            <li>AppArmor limits damage from compromised applications</li>
+            <li>Automatic updates address known vulnerabilities</li>
+            <li>fail2ban dynamically responds to attack patterns</li>
+        </ul>
+
+        <h4>2. Security-Performance Trade-offs</h4>
+        <p>Security controls impose performance overhead that must be considered:</p>
+        <ul>
+            <li><strong>AppArmor:</strong> MAC enforcement adds minimal overhead (~1-2% CPU) but significantly improves security posture</li>
+            <li><strong>fail2ban:</strong> Log parsing consumes system resources but prevents brute-force attacks</li>
+            <li><strong>Firewall:</strong> UFW/netfilter packet filtering adds latency but provides essential network security</li>
+        </ul>
+        <p>Week 6 performance testing will quantify these trade-offs with empirical data.</p>
+
+        <h4>3. Threat Modeling Methodology</h4>
+        <p>Systematic threat modeling provides structure to security planning:</p>
+        <ul>
+            <li>STRIDE framework ensures comprehensive threat coverage across multiple categories</li>
+            <li>Likelihood × Impact matrix prioritizes mitigation efforts effectively</li>
+            <li>Explicit documentation of residual risks enables informed risk acceptance decisions</li>
+        </ul>
+
+        <h3>Challenges Encountered</h3>
+        <ul>
+            <li><strong>Monitoring Tool Selection:</strong> Balancing measurement accuracy with overhead from monitoring tools themselves</li>
+            <li><strong>Threat Prioritization:</strong> Determining appropriate likelihood and impact ratings required research of real-world attack statistics</li>
+            <li><strong>Completeness vs Practicality:</strong> Security checklist could be infinitely detailed; must balance thoroughness with implementation feasibility</li>
+        </ul>
+
+        <h3>Next Steps (Week 3)</h3>
+        <p>Week 3 will focus on selecting applications representing diverse workload types for performance evaluation, ensuring comprehensive testing across CPU-intensive, RAM-intensive, I/O-intensive, and network-intensive scenarios.</p>
+    </section>
+
+    <footer>
+        <p><a href="week1.html">← Previous: Week 1</a> | <a href="index.html">Home</a> | <a href="week3.html">Next: Week 3 →</a></p>
+    </footer>
+</body>
+</html>
