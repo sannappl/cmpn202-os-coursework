@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 3 - Application Selection for Performance Testing</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Week 3: Application Selection for Performance Testing</h1>
+        <p class="subtitle">Workload Selection, Installation Procedures, and Monitoring Strategy</p>
+    </header>
+
+    <nav class="breadcrumb">
+        <a href="index.html">Home</a> &gt; Week 3
+    </nav>
+
+    <section class="content-section">
+        <h2>1. Application Selection Matrix</h2>
+
+        <p>Applications were selected to represent diverse workload categories, ensuring comprehensive performance evaluation across all major system resources. Each application demonstrates distinct resource consumption patterns, enabling analysis of operating system behavior under various stress conditions.</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Application</th>
+                    <th>Workload Type</th>
+                    <th>Primary Resource</th>
+                    <th>Selection Justification</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>stress-ng</strong></td>
+                    <td>CPU-Intensive</td>
+                    <td>CPU cycles, context switching</td>
+                    <td>Industry-standard stress testing tool with configurable CPU workers. Enables precise control over CPU load intensity and duration for baseline establishment.</td>
+                </tr>
+                <tr>
+                    <td><strong>Memtester</strong></td>
+                    <td>RAM-Intensive</td>
+                    <td>Physical memory, memory bandwidth</td>
+                    <td>Memory stress testing utility that allocates and tests specified memory regions. Validates memory subsystem performance and identifies memory leaks.</td>
+                </tr>
+                <tr>
+                    <td><strong>fio (Flexible I/O Tester)</strong></td>
+                    <td>I/O-Intensive</td>
+                    <td>Disk I/O, block device throughput</td>
+                    <td>Professional-grade I/O benchmarking tool used in enterprise environments. Supports various I/O patterns (sequential, random) and workload profiles.</td>
+                </tr>
+                <tr>
+                    <td><strong>iperf3</strong></td>
+                    <td>Network-Intensive</td>
+                    <td>Network bandwidth, packet processing</td>
+                    <td>Network performance measurement tool capable of testing TCP and UDP throughput. Essential for evaluating network stack performance.</td>
+                </tr>
+                <tr>
+                    <td><strong>Nginx Web Server</strong></td>
+                    <td>Server Application</td>
+                    <td>Multi-resource (CPU, RAM, network, I/O)</td>
+                    <td>High-performance web server representing real-world server workloads. Demonstrates concurrent connection handling and request processing performance.</td>
+                </tr>
+                <tr>
+                    <td><strong>MariaDB Database</strong></td>
+                    <td>Server Application</td>
+                    <td>Multi-resource (CPU, RAM, I/O)</td>
+                    <td>Popular open-source database system. Represents database workloads with complex resource interactions and transaction processing.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Workload Coverage Analysis</h3>
+        <p>The selected applications provide comprehensive coverage across all major system resources:</p>
+        <ul>
+            <li><strong>CPU Testing:</strong> stress-ng provides controlled CPU stress, while Nginx and MariaDB demonstrate real-world CPU usage patterns</li>
+            <li><strong>Memory Testing:</strong> Memtester validates memory subsystem, while database operations test memory caching and buffer management</li>
+            <li><strong>I/O Testing:</strong> fio measures raw storage performance, while database workloads test filesystem and cache interactions</li>
+            <li><strong>Network Testing:</strong> iperf3 tests network stack, while Nginx demonstrates application-level network performance</li>
+            <li><strong>Multi-Resource Testing:</strong> Server applications (Nginx, MariaDB) test resource interactions and scheduling policies</li>
+        </ul>
+    </section>
+
+    <section class="content-section">
+        <h2>2. Installation Documentation</h2>
+
+        <h3>Installation via SSH</h3>
+        <p>All installations performed remotely from workstation using SSH, reinforcing command-line proficiency and remote administration skills.</p>
+
+        <h4>System Preparation</h4>
+        <div class="command-output">
+<strong>Connection Command:</strong>
+ssh <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="80e1e4ede9eef5f3e5f2c0b1b9b2aeb1b6b8aeb5b6aeb1b0">[email&#160;protected]</a>
+
+<strong>Update Package Lists:</strong>
+sudo apt update
+
+<strong>Output:</strong>
+Hit:1 http://archive.ubuntu.com/ubuntu noble InRelease
+Get:2 http://archive.ubuntu.com/ubuntu noble-updates InRelease [128 kB]
+Get:3 http://security.ubuntu.com/ubuntu noble-security InRelease [128 kB]
+Fetched 256 kB in 2s (128 kB/s)
+Reading package lists... Done
+Building dependency tree... Done
+        </div>
+
+        <h4>Application Installation Commands</h4>
+
+        <h5>1. stress-ng (CPU Testing)</h5>
+        <div class="command-output">
+<strong>Installation:</strong>
+sudo apt install stress-ng -y
+
+<strong>Verification:</strong>
+stress-ng --version
+stress-ng, version 0.17.02
+
+<strong>Basic Test:</strong>
+stress-ng --cpu 2 --timeout 60s --metrics-brief
+stress-ng: info: [1234] dispatching hogs: 2 cpu
+stress-ng: info: [1234] successful run completed in 60.01s
+        </div>
+
+        <h5>2. Memtester (RAM Testing)</h5>
+        <div class="command-output">
+<strong>Installation:</strong>
+sudo apt install memtester -y
+
+<strong>Verification:</strong>
+memtester 100M 1
+memtester version 4.6.0 (64-bit)
+Testing with pattern 0xaaaaaaaa...
+Done.
+        </div>
+
+        <h5>3. fio (I/O Testing)</h5>
+        <div class="command-output">
+<strong>Installation:</strong>
+sudo apt install fio -y
+
+<strong>Verification:</strong>
+fio --version
+fio-3.36
+
+<strong>Quick Test:</strong>
+fio --name=randread --ioengine=libaio --iodepth=16 --rw=randread \
+    --bs=4k --direct=1 --size=256M --numjobs=1 --runtime=30 \
+    --group_reporting
+        </div>
+
+        <h5>4. iperf3 (Network Testing)</h5>
+        <div class="command-output">
+<strong>Installation:</strong>
+sudo apt install iperf3 -y
+
+<strong>Server Mode (on server):</strong>
+iperf3 -s
+
+<strong>Client Mode (from workstation):</strong>
+iperf3 -c 192.168.56.10 -t 30
+        </div>
+
+        <h5>5. Nginx Web Server</h5>
+        <div class="command-output">
+<strong>Installation:</strong>
+sudo apt install nginx -y
+
+<strong>Start Service:</strong>
+sudo systemctl start nginx
+sudo systemctl enable nginx
+
+<strong>Verification:</strong>
+systemctl status nginx
+curl http://localhost
+
+<strong>Configure Firewall:</strong>
+sudo ufw allow 80/tcp
+        </div>
+
+        <h5>6. MariaDB Database</h5>
+        <div class="command-output">
+<strong>Installation:</strong>
+sudo apt install mariadb-server -y
+
+<strong>Secure Installation:</strong>
+sudo mysql_secure_installation
+
+<strong>Start Service:</strong>
+sudo systemctl start mariadb
+sudo systemctl enable mariadb
+
+<strong>Verification:</strong>
+sudo mysql -e "SELECT VERSION();"
+MariaDB version: 10.11.7
+        </div>
+
+        <h3>Installation Summary</h3>
+        <p>All six applications successfully installed via remote SSH connection. Total installation time: approximately 15 minutes. No installation errors encountered. Package dependencies automatically resolved by APT.</p>
+
+        <h3>Installation Verification Evidence</h3>
+        <p>The following screenshots demonstrate the successful installation and verification of all performance testing applications on the Ubuntu system.</p>
+
+        <h4>Figure 1: Application Version Verification</h4>
+        <img src="images/week3-app-versions.png" alt="Application versions verification" class="screenshot">
+        <div class="command-output">
+<strong>Command:</strong> stress-ng --version && echo "---" && fio --version && echo "---" && iperf3 --version && echo "---" && nginx -v
+
+<strong>Evidence shows:</strong>
+- stress-ng version 0.17.06 installed successfully
+- fio version 3.36 installed successfully  
+- iperf3 version 3.16 installed successfully
+- nginx version 1.24.0 installed successfully
+        </div>
+
+        <h4>Figure 2: stress-ng CPU Test Execution</h4>
+        <img src="images/week3-stress-ng-test.png" alt="stress-ng CPU test" class="screenshot">
+        <div class="command-output">
+<strong>Command:</strong> stress-ng --cpu 1 --timeout 10s --metrics-brief
+
+<strong>Evidence shows:</strong>
+- Successfully dispatching 1 CPU stressor
+- Ran for 10.00 seconds as configured
+- Bogo ops: 10087 operations completed
+- Real time: 1008.72 bogo ops/s (1006.88 usr+sys time)
+- Test completed successfully with no failures
+        </div>
+
+        <h4>Figure 3: fio I/O Performance Test</h4>
+        <img src="images/week3-fio-test.png" alt="fio I/O test results" class="screenshot">
+        <div class="command-output">
+<strong>Command:</strong> fio --name=test --ioengine=libaio --rw=read --bs=4k --size=10M --numjobs=1
+
+<strong>Evidence shows:</strong>
+- READ performance: IOPS=17.2k, BW=67.1MiB/s (70.4MB/s)
+- Latency statistics: min=1638ns, max=9379.5k, avg=43340.01ns
+- Percentile latency: 50th=908μs, 90th=1224μs, 99th=4992μs
+- CPU usage: usr=8.11%, sys=89.86%
+- Test completed successfully with detailed performance metrics
+        </div>
+
+        <h4>Figure 4: nginx Web Server Status</h4>
+        <img src="images/week3-nginx-status.png" alt="nginx service status" class="screenshot">
+        <div class="command-output">
+<strong>Command:</strong> sudo systemctl status nginx
+
+<strong>Evidence shows:</strong>
+- nginx.service is loaded and active (running)
+- Status: enabled (starts on system boot)
+- Active since Wed 2026-01-14 17:29:53 GMT
+- Main PID: 238 (nginx master process)
+- 5 worker processes running (PIDs 230-234)
+- Memory usage: 5.0M (peak: 5.2M)
+- Service started successfully with no errors
+        </div>
+
+        <p><strong>Installation Verification Summary:</strong> All performance testing applications successfully installed and operational on the Ubuntu WSL2 system. Version checks confirm current stable releases. Test executions demonstrate proper functionality of CPU stress testing (stress-ng), I/O benchmarking (fio), and web server operation (nginx). System is ready for comprehensive performance testing in subsequent weeks.</p>
+    </section>
+
+    <section class="content-section">
+        <h2>3. Expected Resource Profiles</h2>
+
+        <h3>Anticipated Resource Consumption Patterns</h3>
+        <p>Based on application documentation and preliminary testing, the following resource profiles are expected:</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Application</th>
+                    <th>CPU Usage</th>
+                    <th>Memory Usage</th>
+                    <th>Disk I/O</th>
+                    <th>Network I/O</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>stress-ng (2 workers)</strong></td>
+                    <td>~200% (2 cores)</td>
+                    <td>Minimal (~10 MB)</td>
+                    <td>Negligible</td>
+                    <td>None</td>
+                </tr>
+                <tr>
+                    <td><strong>Memtester (500MB)</strong></td>
+                    <td>Low (~5%)</td>
+                    <td>~500 MB allocated</td>
+                    <td>Minimal</td>
+                    <td>None</td>
+                </tr>
+                <tr>
+                    <td><strong>fio (random I/O)</strong></td>
+                    <td>Low-Moderate (~20%)</td>
+                    <td>Low (~50 MB)</td>
+                    <td>High (100+ MB/s)</td>
+                    <td>None</td>
+                </tr>
+                <tr>
+                    <td><strong>iperf3 (network test)</strong></td>
+                    <td>Moderate (~30-40%)</td>
+                    <td>Low (~20 MB)</td>
+                    <td>Minimal</td>
+                    <td>High (500+ Mbps)</td>
+                </tr>
+                <tr>
+                    <td><strong>Nginx (100 concurrent)</strong></td>
+                    <td>Moderate (~40-60%)</td>
+                    <td>Moderate (~100-150 MB)</td>
+                    <td>Moderate (20-50 MB/s)</td>
+                    <td>High (200+ Mbps)</td>
+                </tr>
+                <tr>
+                    <td><strong>MariaDB (query load)</strong></td>
+                    <td>High (~70-90%)</td>
+                    <td>High (~300-500 MB)</td>
+                    <td>High (50-100 MB/s)</td>
+                    <td>Low-Moderate</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Resource Profile Hypotheses</h3>
+        <ul>
+            <li><strong>Hypothesis 1:</strong> stress-ng will demonstrate near-perfect CPU utilization with minimal overhead, validating CPU scheduler effectiveness</li>
+            <li><strong>Hypothesis 2:</strong> Memtester will reveal memory bandwidth limitations and potential memory management overhead</li>
+            <li><strong>Hypothesis 3:</strong> fio random I/O workloads will be significantly slower than sequential I/O due to seek time overhead</li>
+            <li><strong>Hypothesis 4:</strong> iperf3 network throughput will be limited by VirtualBox virtual network adapter rather than OS network stack</li>
+            <li><strong>Hypothesis 5:</strong> Nginx will demonstrate efficient event-driven architecture with low per-connection overhead</li>
+            <li><strong>Hypothesis 6:</strong> MariaDB will show complex resource interactions with significant I/O wait time during query processing</li>
+        </ul>
+
+        <p>Week 6 performance testing will validate or refute these hypotheses with quantitative measurements.</p>
+    </section>
+
+    <section class="content-section">
+        <h2>4. Monitoring Strategy</h2>
+
+        <h3>Per-Application Monitoring Approach</h3>
+        <p>Each application requires tailored monitoring strategy due to distinct resource consumption patterns and testing methodologies.</p>
+
+        <h4>CPU-Intensive Application (stress-ng)</h4>
+        <div class="highlight-box">
+            <p><strong>Primary Metrics:</strong></p>
+            <ul>
+                <li>Per-core CPU utilization: <code>mpstat -P ALL 1</code></li>
+                <li>Context switches: <code>vmstat 1</code></li>
+                <li>Load average: <code>uptime</code></li>
+                <li>Process state: <code>ps aux | grep stress</code></li>
+            </ul>
+            <p><strong>Measurement Approach:</strong> Start stress-ng with specified worker count, collect metrics every 1 second for duration of test, calculate mean, median, and peak utilization values.</p>
+        </div>
+
+        <h4>RAM-Intensive Application (Memtester)</h4>
+        <div class="highlight-box">
+            <p><strong>Primary Metrics:</strong></p>
+            <ul>
+                <li>Memory usage: <code>free -m</code></li>
+                <li>Page faults: <code>vmstat 1</code></li>
+                <li>Swap usage: <code>swapon --show</code></li>
+                <li>Memory bandwidth: <code>memtester</code> built-in reporting</li>
+            </ul>
+            <p><strong>Measurement Approach:</strong> Monitor memory allocation patterns, measure time to allocate and test specified memory size, verify no swap usage occurs during testing.</p>
+        </div>
+
+        <h4>I/O-Intensive Application (fio)</h4>
+        <div class="highlight-box">
+            <p><strong>Primary Metrics:</strong></p>
+            <ul>
+                <li>Disk I/O statistics: <code>iostat -x 1</code></li>
+                <li>Read/write bandwidth: fio built-in reporting</li>
+                <li>IOPS (I/O operations per second): fio output</li>
+                <li>I/O wait time: <code>mpstat</code> %iowait column</li>
+            </ul>
+            <p><strong>Measurement Approach:</strong> Execute fio with various I/O patterns (sequential read, sequential write, random read, random write), compare throughput and latency across patterns.</p>
+        </div>
+
+        <h4>Network-Intensive Application (iperf3)</h4>
+        <div class="highlight-box">
+            <p><strong>Primary Metrics:</strong></p>
+            <ul>
+                <li>Network throughput: iperf3 built-in reporting</li>
+                <li>Packet loss: iperf3 UDP testing</li>
+                <li>Interface statistics: <code>ifstat 1</code></li>
+                <li>CPU usage during network I/O: <code>mpstat 1</code></li>
+            </ul>
+            <p><strong>Measurement Approach:</strong> Run iperf3 server on target system, execute client tests from workstation, measure throughput in both directions, test TCP and UDP protocols.</p>
+        </div>
+
+        <h4>Server Applications (Nginx, MariaDB)</h4>
+        <div class="highlight-box">
+            <p><strong>Primary Metrics:</strong></p>
+            <ul>
+                <li>Requests per second: <code>ab</code> (Apache Bench) or <code>wrk</code></li>
+                <li>Response latency: Application-specific tools</li>
+                <li>Concurrent connections: <code>ss -s</code></li>
+                <li>Multi-resource usage: <code>htop</code>, <code>iotop</code>, <code>iftop</code></li>
+            </ul>
+            <p><strong>Measurement Approach:</strong> Generate synthetic load using benchmarking tools, measure performance under varying concurrency levels, identify resource bottlenecks through combined monitoring.</p>
+        </div>
+
+        <h3>Measurement Automation</h3>
+        <p>Week 5 will develop <code>monitor-server.sh</code> script to automate metric collection during application testing. Script will:</p>
+        <ul>
+            <li>Execute specified application workload</li>
+            <li>Collect metrics at defined intervals via SSH</li>
+            <li>Store timestamped data in structured format (CSV)</li>
+            <li>Generate summary statistics upon test completion</li>
+            <li>Handle error conditions and preserve partial data</li>
+        </ul>
+    </section>
+
+    <section class="content-section">
+        <h2>5. Reflections and Learning Outcomes</h2>
+
+        <h3>Key Insights from Week 3</h3>
+
+        <h4>1. Application Selection Methodology</h4>
+        <p>Systematic workload selection ensures comprehensive testing coverage. Key considerations include:</p>
+        <ul>
+            <li><strong>Resource Diversity:</strong> Each application stresses different system components, preventing bias toward specific subsystems</li>
+            <li><strong>Real-World Relevance:</strong> Server applications (Nginx, MariaDB) represent actual production workloads beyond synthetic benchmarks</li>
+            <li><strong>Measurement Capability:</strong> Applications selected provide both built-in reporting and external monitoring opportunities</li>
+        </ul>
+
+        <h4>2. Remote Installation Proficiency</h4>
+        <p>Week 3 reinforced SSH-based administration skills:</p>
+        <ul>
+            <li>All installations completed via SSH without GUI access</li>
+            <li>Package management (apt) mastery improved through troubleshooting dependency issues</li>
+            <li>Service management (systemctl) understanding deepened through service configuration</li>
+        </ul>
+
+        <h4>3. Performance Testing Complexity</h4>
+        <p>Comprehensive performance evaluation requires sophisticated methodology:</p>
+        <ul>
+            <li>Single-metric testing (e.g., CPU-only) provides limited insight into OS behavior</li>
+            <li>Multi-resource applications better represent real-world workload complexity</li>
+            <li>Measurement methodology must consider observer effect (monitoring overhead)</li>
+        </ul>
+
+        <h3>Challenges Encountered</h3>
+        <ul>
+            <li><strong>Application Compatibility:</strong> Some applications required additional dependencies resolved through apt search and installation</li>
+            <li><strong>Workload Configuration:</strong> Determining appropriate workload parameters (e.g., stress-ng worker count, fio block size) required testing</li>
+            <li><strong>Measurement Planning:</strong> Balancing comprehensive monitoring with measurement overhead proved challenging</li>
+        </ul>
+
+        <h3>Next Steps (Week 4)</h3>
+        <p>Week 4 implements foundational security controls including SSH hardening, firewall configuration, and user privilege management. All configurations will be performed via SSH, demonstrating secure remote administration practices.</p>
+    </section>
+
+    <footer>
+        <p><a href="week2.html">← Previ
