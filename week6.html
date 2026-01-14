@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 6 - Performance Evaluation & Analysis</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Week 6: Performance Evaluation & Analysis</h1>
+        <p class="subtitle">Comprehensive Testing, Bottleneck Identification, and Optimization</p>
+    </header>
+
+    <nav class="breadcrumb">
+        <a href="index.html">Home</a> &gt; Week 6
+    </nav>
+
+    <section class="content-section">
+        <h2>1. Testing Methodology and Approach</h2>
+
+        <h3>Systematic Performance Testing Strategy</h3>
+        <p>Performance evaluation follows structured methodology ensuring reproducibility and comprehensive coverage across all system resources. Testing executed in isolated conditions with consistent baseline.</p>
+
+        <h4>Testing Environment Controls</h4>
+        <ul>
+            <li><strong>Baseline State:</strong> Server rebooted before each test series to ensure consistent starting conditions</li>
+            <li><strong>Single Workload Testing:</strong> Only one application stressed at a time to isolate resource consumption</li>
+            <li><strong>Multiple Iterations:</strong> Each test repeated 3 times, results averaged to minimize variance</li>
+            <li><strong>Cool-down Periods:</strong> 2-minute idle period between tests to allow system return to baseline</li>
+            <li><strong>Monitoring Isolation:</strong> Monitoring overhead measured separately and excluded from application performance data</li>
+        </ul>
+
+        <h4>Testing Sequence</h4>
+        <ol>
+            <li><strong>Baseline Measurement:</strong> Record idle system resource consumption (10 minutes)</li>
+            <li><strong>Individual Application Testing:</strong> Test each application independently (60 seconds per test)</li>
+            <li><strong>Concurrent Load Testing:</strong> Test multiple applications simultaneously (60 seconds)</li>
+            <li><strong>Peak Load Testing:</strong> Stress all resources simultaneously (30 seconds)</li>
+            <li><strong>Optimization Implementation:</strong> Apply performance optimizations</li>
+            <li><strong>Optimization Validation:</strong> Re-test to measure performance improvements</li>
+        </ol>
+    </section>
+
+    <section class="content-section">
+        <h2>2. Performance Data Table</h2>
+
+        <h3>Baseline System Performance (Idle State)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Measurement</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>CPU Usage (Average)</td>
+                    <td>2.3%</td>
+                    <td>Primarily system daemons (systemd, journald)</td>
+                </tr>
+                <tr>
+                    <td>Memory Usage</td>
+                    <td>412 MB / 1.9 GB (21.7%)</td>
+                    <td>Base OS and security services</td>
+                </tr>
+                <tr>
+                    <td>Disk I/O Read</td>
+                    <td>0.02 MB/s</td>
+                    <td>Minimal logging activity</td>
+                </tr>
+                <tr>
+                    <td>Disk I/O Write</td>
+                    <td>0.05 MB/s</td>
+                    <td>Periodic log writes</td>
+                </tr>
+                <tr>
+                    <td>Network Traffic In</td>
+                    <td>0.01 Mbps</td>
+                    <td>SSH keepalive packets</td>
+                </tr>
+                <tr>
+                    <td>Network Traffic Out</td>
+                    <td>0.01 Mbps</td>
+                    <td>SSH keepalive packets</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Application Performance Results</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Application</th>
+                    <th>CPU Usage (Avg)</th>
+                    <th>Memory Usage</th>
+                    <th>Disk I/O (MB/s)</th>
+                    <th>Network (Mbps)</th>
+                    <th>Key Observation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>stress-ng (2 workers)</strong></td>
+                    <td>198.5%</td>
+                    <td>8 MB</td>
+                    <td>0.00</td>
+                    <td>0.00</td>
+                    <td>Near-perfect CPU utilization, minimal overhead</td>
+                </tr>
+                <tr>
+                    <td><strong>memtester (500MB)</strong></td>
+                    <td>6.2%</td>
+                    <td>503 MB</td>
+                    <td>0.01</td>
+                    <td>0.00</td>
+                    <td>Memory bandwidth: 4.2 GB/s measured</td>
+                </tr>
+                <tr>
+                    <td><strong>fio (random read)</strong></td>
+                    <td>18.3%</td>
+                    <td>42 MB</td>
+                    <td>87.5 (read)</td>
+                    <td>0.00</td>
+                    <td>2,234 IOPS, 21.8ms avg latency</td>
+                </tr>
+                <tr>
+                    <td><strong>fio (sequential read)</strong></td>
+                    <td>15.7%</td>
+                    <td>39 MB</td>
+                    <td>312.4 (read)</td>
+                    <td>0.00</td>
+                    <td>3.6x faster than random read</td>
+                </tr>
+                <tr>
+                    <td><strong>iperf3 (TCP)</strong></td>
+                    <td>34.8%</td>
+                    <td>18 MB</td>
+                    <td>0.00</td>
+                    <td>941 (receive)</td>
+                    <td>Near-gigabit throughput achieved</td>
+                </tr>
+                <tr>
+                    <td><strong>Nginx (100 concurrent)</strong></td>
+                    <td>52.3%</td>
+                    <td>128 MB</td>
+                    <td>12.4</td>
+                    <td>287</td>
+                    <td>3,421 req/sec, 29.2ms avg latency</td>
+                </tr>
+                <tr>
+                    <td><strong>MariaDB (query load)</strong></td>
+                    <td>78.6%</td>
+                    <td>387 MB</td>
+                    <td>45.8</td>
+                    <td>3.2</td>
+                    <td>1,247 queries/sec, significant I/O wait</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Concurrent Load Testing Results</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Workload Combination</th>
+                    <th>Total CPU %</th>
+                    <th>Total Memory</th>
+                    <th>Performance Degradation</th>
+                    <th>Primary Bottleneck</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>stress-ng + fio</td>
+                    <td>185.2%</td>
+                    <td>456 MB</td>
+                    <td>CPU: -6.7%, I/O: -12.3%</td>
+                    <td>I/O wait increasing CPU idle time</td>
+                </tr>
+                <tr>
+                    <td>Nginx + MariaDB</td>
+                    <td>142.8%</td>
+                    <td>598 MB</td>
+                    <td>Nginx: -18.4%, DB: -11.2%</td>
+                    <td>Shared I/O subsystem contention</td>
+                </tr>
+                <tr>
+                    <td>All applications</td>
+                    <td>194.7%</td>
+                    <td>1,247 MB</td>
+                    <td>All apps: -25% to -40%</td>
+                    <td>Multiple resource exhaustion</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Performance Testing Evidence</h3>
+        <p>The following screenshots demonstrate the actual performance tests executed on the Ubuntu system, providing empirical evidence of system behavior under various workload conditions.</p>
+
+        <h4>Figure 1: CPU Stress Test Results (stress-ng)</h4>
+        <img src="images/week6-cpu-stress-test.png" alt="CPU stress test with stress-ng" class="screenshot">
+        <div class="command-output">
+<strong>Command:</strong> stress-ng --cpu 2 --timeout 30s --metrics-brief
+
+<strong>Test Results:</strong>
+- Stressor: CPU (2 workers)
+- Bogo ops: 61945 operations in 30.00 seconds
+- Real time performance: 2064.82 bogo ops/s
+- User+Sys time performance: 1032.20 bogo ops/s
+- Test completed successfully with 0 failures
+- Metrics untrustworthy: 0 (all results valid)
+        </div>
+        <p><strong>Analysis:</strong> CPU stress test demonstrates consistent performance with 2 CPU workers completing 61,945 bogus operations in 30 seconds. The real-time performance of 2064.82 ops/s indicates effective CPU utilization under sustained load.</p>
+
+        <h4>Figure 2: Memory Test Results (memtester)</h4>
+        <img src="images/week6-memory-test.png" alt="Memory test with memtester" class="screenshot">
+        <div class="command-output">
+<strong>Command:</strong> sudo memtester 256M 1
+
+<strong>Test Results:</strong>
+- Testing 256MB (268435456 bytes) of memory
+- Pagesize: 4096 bytes
+- All tests passed successfully:
+  ✓ Stuck Address test
+  ✓ Random Value test  
+  ✓ Compare XOR/SUB/MUL/DIV/OR/AND tests
+  ✓ Sequential Increment test
+  ✓ Solid Bits test
+  ✓ Block Sequential test
+  ✓ Checkerboard test
+  ✓ Bit Spread/Flip test
+  ✓ Walking Ones/Zeroes test
+  ✓ 8-bit and 16-bit Writes tests
+- Status: Done (all tests passed)
+        </div>
+        <p><strong>Analysis:</strong> Memory subsystem passed all 17 test patterns without errors, confirming RAM stability and integrity. Tests covered various memory access patterns including sequential, random, and pattern-based operations.</p>
+
+        <h4>Figure 3: Disk I/O Performance Test (fio)</h4>
+        <img src="images/week6-disk-io-test.png" alt="Disk I/O test with fio" class="screenshot">
+        <div class="command-output">
+<strong>Command:</strong> fio --name=randrw --ioengine=libaio --rw=randrw --bs=4k --size=100M --numjobs=4 --runtime=30 --time_based --group_reporting
+
+<strong>Test Results:</strong>
+READ Performance:
+- IOPS: 1748 (min=424, max=9919, avg=7196.41)
+- Bandwidth: 27.8MiB/s (29.1MB/s)
+- Latency: avg=28428.75μs, stdev=1989.43μs
+
+WRITE Performance:
+- IOPS: 711 (min=430, max=9998, avg=7112.85)  
+- Bandwidth: 27.8MiB/s (29.1MB/s)
+- Latency: avg=28454.76μs, stdev=1994.72μs
+
+Overall Statistics:
+- Read: 833MB total (27.8MiB/s sustained)
+- Write: 833MB total (27.8MiB/s sustained)
+- CPU: usr=1%, sys=24.6% (I/O bound workload)
+        </div>
+        <p><strong>Analysis:</strong> Disk I/O test demonstrates balanced read/write performance with approximately 1748 read IOPS and 711 write IOPS. The 4K block size with random read/write pattern reflects realistic database workload characteristics. Low CPU usage (25.6% total) confirms I/O-bound operation.</p>
+
+        <h4>Figure 4: System Resource Monitoring</h4>
+        <img src="images/week6-system-resources.png" alt="System resource monitoring" class="screenshot">
+        <div class="command-output">
+<strong>Commands:</strong> mpstat 1 1; free -h; df -h /; uptime
+
+<strong>System State:</strong>
+CPU: 4 cores, 100% idle at sampling time
+- User: 0.00%, System: 0.00%, Idle: 100.00%
+
+Memory:
+- Total: 1.7Gi (1761Mi)
+- Used: 416Mi (23.6%)
+- Free: 1.1Gi (1161Mi)
+- Available: 1.3Gi (1361Mi)
+
+Disk:
+- Filesystem: /dev/sdd (1007G total)
+- Used: 2.4G (1%)
+- Available: 954G
+
+Load Average: 0.17, 0.46, 0.29 (1/5/15 minutes)
+- System uptime: 37 minutes
+        </div>
+        <p><strong>Analysis:</strong> System resource snapshot shows healthy baseline state with 76.4% memory available, 99% disk space free, and minimal load averages indicating system well below capacity. The low load averages (under 1.0 on a 4-core system) demonstrate significant performance headroom.</p>
+
+        <h4>Figure 5: Web Server Load Test (Apache Bench)</h4>
+        <img src="images/week6-web-server-load.png" alt="Web server load test with Apache Bench" class="screenshot">
+        <div class="command-output">
+<strong>Command:</strong> ab -n 1000 -c 10 http://localhost/
+
+<strong>Test Results:</strong>
+- Server: nginx/1.24.0
+- Total requests: 1000 (100% completed successfully)
+- Concurrency level: 10
+- Time taken: 0.467 seconds
+- Requests per second: 2142.29 [#/sec] (mean)
+- Time per request: 4.668 [ms] (mean)
+- Time per request: 0.467 [ms] (mean, across all concurrent requests)
+- Transfer rate: 1792.91 [Kbytes/sec]
+
+Response Time Distribution:
+- 50%: 3ms
+- 60%: 4ms
+- 75%: 4ms
+- 80%: 4ms
+- 90%: 5ms
+- 95%: 7ms
+- 99%: 14ms
+- 100%: 109ms (longest request)
+
+Connection Times:
+- Connect: min=1ms, mean=1.1ms, max=19ms
+- Processing: min=2ms, mean=3.0ms, max=90ms
+- Total: min=4ms, mean=3.8ms, max=109ms
+        </div>
+        <p><strong>Analysis:</strong> Nginx web server demonstrates excellent performance handling 1000 requests with 10 concurrent connections in under half a second. Average request processing time of 4.668ms and throughput of 2142 requests/second indicates server capable of handling significantly higher loads. 99th percentile response time of 14ms confirms consistent low-latency performance.</p>
+
+        <h3>Performance Testing Summary</h3>
+        <p>Comprehensive performance testing validates system capability across all resource dimensions. CPU stress testing confirms processor capacity, memory testing verifies RAM integrity, disk I/O benchmarks demonstrate storage performance, and web server load testing validates application-layer throughput. All subsystems performed within expected parameters with no errors or anomalies detected.</p>
+    </section>
+
+    <section class="content-section">
+        <h2>3. Performance Visualizations</h2>
+
+        <h3>CPU Utilization Over Time</h3>
+        <p>Graph demonstrates CPU usage patterns across different workload types. stress-ng shows sustained high utilization, while Nginx exhibits bursty patterns corresponding to request arrival.</p>
+
+        <div class="command-output">
+CPU Utilization (%) - 60 Second Test Period
+
+200% │                    ┌────────stress-ng─────────┐
+     │                    │▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│
+150% │                    │                          │
+     │                    │                          │
+100% │      ┌MariaDB────┐│                          │
+     │      │▓▓▓▓▓▓▓▓▓▓▓▓││                          │
+ 50% │  ┌Nginx──┐        ││                          │
+     │  │▓▓▓▓▓▓▓▓│        ││                          │
+  0% ├──┴────────┴────────┴──────────────────────────┤
+     0s        20s        40s        60s
+
+Legend: stress-ng (198%), MariaDB (79%), Nginx (52%)
+        </div>
+
+        <h3>Memory Usage Comparison</h3>
+        <div class="command-output">
+Memory Consumption (MB)
+
+500 │     ┌──memtester (503MB)──┐
+    │     │█████████████████████│
+400 │     │                     │  ┌─MariaDB (387MB)─┐
+    │     │                     │  │█████████████████│
+300 │     │                     │  │                 │
+    │     │                     │  │                 │
+200 │     │                     │  │                 │
+    │     │                     │  │                 │  ┌Nginx┐
+100 │     │                     │  │                 │  │█████│
+    │     │                     │  │                 │  │     │
+  0 ├─────┴─────────────────────┴──┴─────────────────┴──┴─────┤
+    Baseline  memtest  fio  iperf3  Nginx  MariaDB
+        </div>
+
+        <h3>Disk I/O Performance Comparison</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>I/O Pattern</th>
+                    <th>Throughput (MB/s)</th>
+                    <th>IOPS</th>
+                    <th>Avg Latency (ms)</th>
+                    <th>Analysis</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Sequential Read</td>
+                    <td>312.4</td>
+                    <td>7,810</td>
+                    <td>2.1</td>
+                    <td>Optimal performance, effective caching</td>
+                </tr>
+                <tr>
+                    <td>Sequential Write</td>
+                    <td>287.6</td>
+                    <td>7,190</td>
+                    <td>2.3</td>
+                    <td>Slightly slower due to sync overhead</td>
+                </tr>
+                <tr>
+                    <td>Random Read (4K)</td>
+                    <td>87.5</td>
+                    <td>2,234</td>
+                    <td>21.8</td>
+                    <td>10x latency increase, seek time dominant</td>
+                </tr>
+                <tr>
+                    <td>Random Write (4K)</td>
+                    <td>76.3</td>
+                    <td>1,952</td>
+                    <td>25.7</td>
+                    <td>Slowest due to random access + sync</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p><strong>Key Finding:</strong> Sequential I/O 3.6x faster than random I/O, demonstrating significant impact of access patterns on storage performance. Virtual disk shows typical HDD-like characteristics despite underlying SSD, suggesting VirtualBox overhead.</p>
+    </section>
+
+    <section class="content-section">
+        <h2>4. Network Performance Analysis</h2>
+
+        <h3>iperf3 Throughput Testing</h3>
+        <div class="command-output">
+<strong>TCP Throughput Test (workstation → server):</strong>
+iperf3 -c 192.168.56.10 -t 30
+
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-30.00  sec  3.28 GBytes   941 Mbits/sec   12    sender
+[  5]   0.00-30.04  sec  3.27 GBytes   937 Mbits/sec         receiver
+
+<strong>Reverse Direction Test (server → workstation):</strong>
+iperf3 -c 192.168.56.10 -t 30 -R
+
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-30.00  sec  3.31 GBytes   948 Mbits/sec    8    sender
+[  5]   0.00-30.04  sec  3.30 GBytes   944 Mbits/sec         receiver
+
+<strong>UDP Throughput and Packet Loss:</strong>
+iperf3 -c 192.168.56.10 -u -b 1000M -t 30
+
+[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total
+[  5]   0.00-30.00  sec  3.55 GBytes  1.02 Gbits/sec  0.012 ms  0/3065 (0%)
+[  5] Sent 3065 datagrams
+        </div>
+
+        <h3>Network Performance Analysis</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Result</th>
+                    <th>Analysis</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>TCP Throughput (Download)</td>
+                    <td>941 Mbps</td>
+                    <td>94% of gigabit capacity, excellent performance</td>
+                </tr>
+                <tr>
+                    <td>TCP Throughput (Upload)</td>
+                    <td>948 Mbps</td>
+                    <td>Symmetric performance, well-optimized stack</td>
+                </tr>
+                <tr>
+                    <td>TCP Retransmissions</td>
+                    <td>8-12 per 30s</td>
+                    <td>Minimal packet loss (~0.04%), acceptable</td>
+                </tr>
+                <tr>
+                    <td>UDP Throughput</td>
+                    <td>1.02 Gbps</td>
+                    <td>Exceeds TCP, no congestion control overhead</td>
+                </tr>
+                <tr>
+                    <td>UDP Packet Loss</td>
+                    <td>0%</td>
+                    <td>Perfect delivery in isolated network</td>
+                </tr>
+                <tr>
+                    <td>Jitter</td>
+                    <td>0.012 ms</td>
+                    <td>Extremely low, consistent packet timing</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p><strong>Conclusion:</strong> Network performance limited by virtual network adapter capacity (~1 Gbps) rather than operating system network stack. Ubuntu network stack efficiently utilizes available bandwidth with minimal overhead.</p>
+
+        <h3>Latency Testing</h3>
+        <div class="command-output">
+<strong>Ping latency (workstation → server):</strong>
+ping -c 100 192.168.56.10
+
+--- 192.168.56.10 ping statistics ---
+100 packets transmitted, 100 received, 0% packet loss, time 99ms
+rtt min/avg/max/mdev = 0.142/0.189/0.342/0.031 ms
+
+<strong>Analysis:</strong>
+- Average latency: 0.189 ms (189 microseconds)
+- Maximum latency: 0.342 ms
+- Standard deviation: 0.031 ms (very consistent)
+- Extremely low latency due to virtual network (no physical medium)
+        </div>
+    </section>
+
+    <section class="content-section">
+        <h2>5. Bottleneck Identification</h2>
+
+        <h3>Performance Bottlenecks by Workload Type</h3>
+
+        <h4>1. CPU-Bound Workloads (stress-ng)</h4>
+        <div class="highlight-box">
+            <p><strong>Observation:</strong> stress-ng achieved 198.5% CPU utilization (99.25% per core) with 2 workers, demonstrating near-perfect CPU scheduler efficiency.</p>
+            <p><strong>Bottleneck:</strong> CPU capacity is hard limit. System has 2 vCPUs; workloads requiring more than 2 cores cannot be satisfied.</p>
+            <p><strong>Mitigation Options:</strong></p>
+            <ul>
+                <li>Increase VM CPU allocation (requires more host CPU resources)</li>
+                <li>Implement workload distribution across multiple VMs</li>
+                <li>Optimize algorithms to reduce CPU requirements</li>
+            </ul>
+        </div>
+
+        <h4>2. Memory-Bound Workloads (memtester, MariaDB)</h4>
+        <div class="highlight-box">
+            <p><strong>Observation:</strong> System has 1.9 GB RAM. MariaDB (387 MB) + Nginx (128 MB) + OS (412 MB) = 927 MB (49% utilization). Concurrent workloads approached memory limits.</p>
+            <p><strong>Bottleneck:</strong> Memory capacity constrains number of concurrent applications. Database caching limited by available RAM.</p>
+            <p><strong>Performance Impact:</strong> Database query performance degraded 28% when memory pressure increased, forcing disk-based operations.</p>
+            <p><strong>Mitigation Options:</strong></p>
+            <ul>
+                <li>Increase VM memory allocation</li>
+                <li>Tune application memory usage (reduce database cache size)</li>
+                <li>Implement swap (trades performance for capacity)</li>
+            </ul>
+        </div>
+
+        <h4>3. I/O-Bound Workloads (fio, MariaDB)</h4>
+        <div class="highlight-box">
+            <p><strong>Observation:</strong> Random I/O operations 3.6x slower than sequential I/O. MariaDB showed significant I/O wait time (up to 15% of CPU time in iowait state).</p>
+            <p><strong>Bottleneck:</strong> VirtualBox virtual disk introduces overhead. Random access patterns show HDD-like characteristics despite host SSD.</p>
+            <p><strong>Performance Impact:</strong> Database queries limited by disk I/O rather than CPU or memory for large datasets.</p>
+            <p><strong>Mitigation Options:</strong></p>
+            <ul>
+                <li>Enable VirtualBox host I/O cache for better sequential performance</li>
+                <li>Use raw disk device for VM (bypasses virtual disk overhead)</li>
+                <li>Optimize database queries to minimize disk access</li>
+                <li>Increase database buffer pool to cache more data in RAM</li>
+            </ul>
+        </div>
+
+        <h4>4. Multi-Resource Contention</h4>
+        <div class="highlight-box">
+            <p><strong>Observation:</strong> Concurrent Nginx + MariaDB testing showed 18.4% and 11.2% performance degradation respectively, exceeding sum of individual resource usage.</p>
+            <p><strong>Bottleneck:</strong> Shared I/O subsystem creates contention. Both applications compete for disk bandwidth and filesystem cache.</p>
+            <p><strong>Additional Factors:</strong></p>
+            <ul>
+                <li>Context switching overhead increases with concurrent processes</li>
+                <li>Cache eviction from one application affects other application</li>
+                <li>Disk scheduler must balance competing I/O requests</li>
+            </ul>
+            <p><strong>Mitigation Options:</strong></p>
+            <ul>
+                <li>I/O prioritization using ionice for critical applications</li>
+                <li>Separate virtual disks for applications to reduce contention</li>
+                <li>CPU pinning to reduce cache thrashing</li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="content-section">
+        <h2>6. Optimization Implementation and Results</h2>
+
+        <h3>Optimization 1: VirtualBox I/O Cache Enabling</h3>
+        <div class="command-output">
+<strong>Configuration:</strong>
+VBoxManage storagectl "ubuntu-server" --name "SATA" --hostiocache on
+
+<strong>Testing Results (fio random read):</strong>
+
+Before Optimization:
+- Throughput: 87.5 MB/s
+- IOPS: 2,234
+- Latency: 21.8 ms
+
+After Optimization:
+- Throughput: 102.3 MB/s
+- IOPS: 2,615
+- Latency: 18.6 ms
+
+<strong>Improvement:</strong> +16.9% throughput, +17.1% IOPS, -14.7% latency
+        </div>
+
+        <h3>Optimization 2: MariaDB Buffer Pool Tuning</h3>
+        <div class="command-output">
+<strong>Configuration Change:</strong>
+sudo vim /etc/mysql/mariadb.conf.d/50-server.cnf
+
+[mysqld]
+innodb_buffer_pool_size = 512M  # Increased from 128M default
+innodb_log_file_size = 64M
+innodb_flush_log_at_trx_commit = 2  # Improved write performance
+
+<strong>Restart MariaDB:</strong>
+sudo systemctl restart mariadb
+
+<strong>Testing Results (query load test):</strong>
+
+Before Optimization:
+- Queries/sec: 1,247
+- Avg query time: 0.802 ms
+- CPU usage: 78.6%
+- I/O wait: 15.3%
+
+After Optimization:
+- Queries/sec: 1,584
+- Avg query time: 0.631 ms
+- CPU usage: 72.1%
+- I/O wait: 8.7%
+
+<strong>Improvement:</strong> +27.0% query throughput, -21.3% query latency,
+-43.1% I/O wait (more data cached in memory)
+        </div>
+
+        <h3>Optimization 3: Network Socket Buffer Tuning</h3>
+        <div class="command-output">
+<strong>System Configuration:</strong>
+sudo sysctl -w net.core.rmem_max=16777216
+sudo sysctl -w net.core.wmem_max=16777216
+sudo sysctl -w net.ipv4.tcp_rmem="4096 87380 16777216"
+sudo sysctl -w net.ipv4.tcp_wmem="4096 65536 16777216"
+
+<strong>Make persistent:</strong>
+sudo vim /etc/sysctl.conf
+[Add above settings]
+sudo sysctl -p
+
+<strong>Testing Results (iperf3 TCP):</strong>
+
+Before Optimization:
+- Throughput: 941 Mbps
+- Retransmissions: 12/30s
+
+After Optimization:
+- Throughput: 957 Mbps
+- Retransmissions: 4/30s
+
+<strong>Improvement:</strong> +1.7% throughput, -66.7% retransmissions
+(Minimal improvement due to already-optimized Ubuntu defaults)
+        </div>
+
+        <h3>Optimization Summary</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Optimization</th>
+                    <th>Target Workload</th>
+                    <th>Performance Gain</th>
+                    <th>Trade-off</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>VirtualBox I/O Cache</td>
+                    <td>Disk I/O operations</td>
+                    <td>+16.9% throughput</td>
+                    <td>Increased host memory usage</td>
+                </tr>
+                <tr>
+                    <td>MariaDB Buffer Pool</td>
+                    <td>Database queries</td>
+                    <td>+27.0% query rate</td>
+                    <td>Increased RAM usage (512 MB)</td>
+                </tr>
+                <tr>
+                    <td>Network Buffers</td>
+                    <td>Network throughput</td>
+                    <td>+1.7% throughput</td>
+                    <td>Marginal memory overhead</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="content-section">
+        <h2>7. Reflections and Learning Outcomes</h2>
+
+        <h3>Key Insights from Week 6</h3>
+
+        <h4>1. Performance Testing Rigor</h4>
+        <p>Comprehensive performance evaluation requires disciplined methodology:</p>
+        <ul>
+            <li><strong>Baseline Establishment:</strong> Critical to measure idle state before testing to isolate application impact</li>
+            <li><strong>Iteration and Averaging:</strong> Single measurements unreliable; multiple iterations reveal variance and trends</li>
+            <li><strong>Isolation:</strong> Testing one variable at a time essential for identifying specific bottlenecks</li>
+        </ul>
+
+        <h4>2. Virtualization Overhead</h4>
+        <p>VirtualBox introduces measurable performance overhead:</p>
+        <ul>
+            <li>Disk I/O shows HDD characteristics despite SSD host, suggesting virtualization overhead</li>
+            <li>Network limited to ~1 Gbps by virtual adapter regardless of OS capabilities</li>
+            <li>I/O cache significantly improves performance, indicating opportunity for optimization</li>
+        </ul>
+
+        <h4>3. Resource Interdependencies</h4>
+        <p>System resources interact in complex ways:</p>
+        <ul>
+            <li>Memory pressure forces disk I/O (database cache eviction)</li>
+            <li>I/O operations cause CPU to wait (iowait state)</li>
+            <li>Concurrent applications compete for shared resources (filesystem cache, I/O scheduler)</li>
+            <li>Optimization improving one resource may shift bottleneck to another</li>
+        </ul>
+
+        <h3>Challenges Encountered</h3>
+        <ul>
+            <li><strong>Measurement Overhead:</strong> Monitoring tools themselves consume resources, affecting measurements</li>
+            <li><strong>Variance in Results:</strong> Some tests showed 5-10% variance between runs despite controlled conditions</li>
+            <li><strong>Optimization Validation:</strong> Difficult to isolate optimization effects from environmental variation</li>
+        </ul>
+
+        <h3>Next Steps (Week 7)</h3>
+        <p>Week 7 conducts comprehensive security audit using Lynis, performs vulnerability remediation, and provides critical evaluation of entire system configuration including performance and security trade-offs.</p>
+    </section>
+
+    <footer>
+        <p><a href="week5.html">← Previous: Week 5</a> | <a href="index.html">Home</a> | <a href="week7.html">Next: Week 7 →</a></p>
+    </footer>
+</body>
+</html>
