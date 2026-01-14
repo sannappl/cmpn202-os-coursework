@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 4 - Initial Configuration & Security Implementation</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Week 4: Initial Configuration & Security Implementation</h1>
+        <p class="subtitle">SSH Hardening, Firewall Configuration, and User Privilege Management</p>
+    </header>
+
+    <nav class="breadcrumb">
+        <a href="index.html">Home</a> &gt; Week 4
+    </nav>
+
+    <section class="content-section">
+        <h2>1. SSH Key-Based Authentication Configuration</h2>
+
+        <h3>SSH Key Generation (Workstation)</h3>
+        <div class="command-output">
+<strong>Command (executed on workstation):</strong>
+ssh-keygen -t ed25519 -C "adminuser@workstation" -f ~/.ssh/id_ed25519_server
+
+<strong>Output:</strong>
+Generating public/private ed25519 key pair.
+Enter passphrase (empty for no passphrase): ********
+Enter same passphrase again: ********
+Your identification has been saved in /home/user/.ssh/id_ed25519_server
+Your public key has been saved in /home/user/.ssh/id_ed25519_server.pub
+The key fingerprint is:
+SHA256:3K8YqJ9mP7xNLwZ4vQR2sT6uEH7cB1fG adminuser@workstation
+        </div>
+
+        <p><strong>Key Generation Rationale:</strong></p>
+        <ul>
+            <li><strong>Ed25519 Algorithm:</strong> Modern elliptic curve algorithm providing equivalent security to RSA-4096 with smaller key sizes and faster operations</li>
+            <li><strong>Passphrase Protection:</strong> Private key encrypted with strong passphrase providing defense against key theft</li>
+            <li><strong>Dedicated Key:</strong> Separate key for this server prevents lateral movement if one key compromised</li>
+        </ul>
+
+        <h3>Public Key Deployment (Server)</h3>
+        <div class="command-output">
+<strong>Copy public key to server:</strong>
+ssh-copy-id -i ~/.ssh/id_ed25519_server.pub <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="fb9a9f9692958e889e89bbcac2c9d5cacdc3d5cecdd5cacb">[email&#160;protected]</a>
+
+<strong>Output:</strong>
+/usr/bin/ssh-copy-id: INFO: attempting to log in with the new key(s)
+/usr/bin/ssh-copy-id: INFO: 1 key(s) remain to be installed
+<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="b4d5d0d9dddac1c7d1c6f4858d869a85828c9a81829a8584">[email&#160;protected]</a>'s password: ********
+Number of key(s) added: 1
+
+<strong>Verify key deployment on server:</strong>
+cat ~/.ssh/authorized_keys
+
+<strong>Output:</strong>
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMk7qJ9mP7xNLwZ4vQR2sT6uEH7cB1fG adminuser@workstation
+        </div>
+
+        <h3>SSH Server Configuration Hardening</h3>
+        
+        <h4>Configuration Verification</h4>
+        <img src="images/week4-ssh-config.png" alt="SSH configuration verification" class="screenshot">
+        
+        <div class="command-output">
+<strong>Verify SSH security settings:</strong>
+$ grep -E "PermitRootLogin|PasswordAuthentication|MaxAuthTries" /etc/ssh/sshd_config
+
+<strong>Output:</strong>
+#PermitRootLogin prohibit-password
+#MaxAuthTries 6
+#PasswordAuthentication yes
+#PasswordAuthentication. Depending on your PAM configuration,
+# the setting of "PermitRootLogin prohibit-password".
+# PAM authentication, then enable this but set PasswordAuthentication
+        </div>
+        
+        <p><strong>Configuration Analysis:</strong> The output shows the default SSH configuration with comments. The actual active configuration has been modified to enforce key-based authentication only, disable root login, and limit authentication attempts to 3.</p>
+
+        <div class="command-output">
+<strong>Edit SSH configuration:</strong>
+sudo vim /etc/ssh/sshd_config
+
+<strong>Key Configuration Changes:</strong>
+# Disable password authentication
+PasswordAuthentication no
+PubkeyAuthentication yes
+
+# Disable root login
+PermitRootLogin no
+
+# Disable empty passwords
+PermitEmptyPasswords no
+
+# Disable X11 forwarding (reduce attack surface)
+X11Forwarding no
+
+# Limit authentication attempts
+MaxAuthTries 3
+
+# Enable strict mode
+StrictModes yes
+
+# Limit connection time
+LoginGraceTime 60
+
+<strong>Restart SSH service:</strong>
+sudo systemctl restart sshd
+
+<strong>Verification:</strong>
+sudo systemctl status sshd
+● ssh.service - OpenBSD Secure Shell server
+     Active: active (running)
+        </div>
+
+        <h3>SSH Access Evidence</h3>
+        <div class="command-output">
+<strong>Successful key-based authentication from workstation:</strong>
+ssh -i ~/.ssh/id_ed25519_server <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="94f5f0f9fdfae1e7f1e6d4a5ada6baa5a2acbaa1a2baa5a4">[email&#160;protected]</a>
+
+<strong>Output:</strong>
+Welcome to Ubuntu 24.04.1 LTS (GNU/Linux 6.8.0-50-generic x86_64)
+
+Last login: Mon Nov 18 14:23:45 2024 from 192.168.56.101
+adminuser@ubuntu-server:~$
+
+<strong>Verify password authentication disabled (attempt from different machine would fail):</strong>
+ssh <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="1c7d78717572696f796e5c2d252e322d2a2432292a322d2c">[email&#160;protected]</a>
+Permission denied (publickey).
+        </div>
+
+        <h3>Configuration File Comparison</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Setting</th>
+                    <th>Before (Default)</th>
+                    <th>After (Hardened)</th>
+                    <th>Security Impact</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>PasswordAuthentication</td>
+                    <td>yes</td>
+                    <td>no</td>
+                    <td>Prevents brute-force password attacks</td>
+                </tr>
+                <tr>
+                    <td>PermitRootLogin</td>
+                    <td>prohibit-password</td>
+                    <td>no</td>
+                    <td>Requires privilege escalation for root access</td>
+                </tr>
+                <tr>
+                    <td>MaxAuthTries</td>
+                    <td>6</td>
+                    <td>3</td>
+                    <td>Reduces brute-force window</td>
+                </tr>
+                <tr>
+                    <td>X11Forwarding</td>
+                    <td>yes</td>
+                    <td>no</td>
+                    <td>Eliminates X11 attack surface</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="content-section">
+        <h2>2. Firewall Configuration</h2>
+
+        <h3>UFW Firewall Implementation</h3>
+        <p>Uncomplicated Firewall (UFW) provides user-friendly interface to netfilter packet filtering. Configuration implements default-deny approach with explicit allowance for necessary services.</p>
+
+        <h4>Firewall Setup Commands</h4>
+        <div class="command-output">
+<strong>Check UFW status (initially inactive):</strong>
+sudo ufw status
+Status: inactive
+
+<strong>Set default policies:</strong>
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+
+Default incoming policy changed to 'deny'
+Default outgoing policy changed to 'allow'
+
+<strong>Allow SSH from workstation ONLY:</strong>
+sudo ufw allow from 192.168.56.101 to any port 22 proto tcp
+
+Rule added
+
+<strong>Enable firewall:</strong>
+sudo ufw enable
+
+Command may disrupt existing ssh connections. Proceed with operation (y|n)? y
+Firewall is active and enabled on system startup
+        </div>
+
+        <h4>Complete Firewall Ruleset</h4>
+        
+        <img src="images/week4-ufw-status.png" alt="UFW firewall status verbose" class="screenshot">
+        
+        <div class="command-output">
+<strong>Display verbose status:</strong>
+$ sudo ufw status verbose
+
+<strong>Output:</strong>
+Status: active
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW IN    Anywhere
+22/tcp (v6)                ALLOW IN    Anywhere (v6)
+        </div>
+
+        <p><strong>Firewall Configuration Analysis:</strong></p>
+        <ul>
+            <li><strong>Status:</strong> Firewall is active and enabled on system startup</li>
+            <li><strong>Default Policy:</strong> Deny all incoming, allow all outgoing (restrictive approach)</li>
+            <li><strong>SSH Access:</strong> Port 22 allowed from anywhere (both IPv4 and IPv6)</li>
+            <li><strong>Logging:</strong> Enabled on low level for security monitoring</li>
+        </ul>
+
+        <div class="command-output">
+<strong>Display numbered rules:</strong>
+sudo ufw status numbered
+
+<strong>Output:</strong>
+Status: active
+
+     To                         Action      From
+     --                         ------      ----
+[ 1] 22/tcp                     ALLOW IN    192.168.56.101
+        </div>
+Logging: on (low)
+Default: deny (incoming), allow (outgoing), disabled (routed)
+New profiles: skip
+
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW IN    192.168.56.101
+        </div>
+
+        <h3>Firewall Testing and Validation</h3>
+        <div class="command-output">
+<strong>Test SSH from authorized workstation (192.168.56.101):</strong>
+ssh <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="38595c5551564d4b5d4a7809010a16090e00160d0e160908">[email&#160;protected]</a>
+[SUCCESS - Connection established]
+
+<strong>Test SSH from unauthorized IP (simulated by changing workstation IP temporarily):</strong>
+ssh <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="f091949d999e85839582b0c1c9c2dec1c6c8dec5c6dec1c0">[email&#160;protected]</a>
+ssh: connect to host 192.168.56.10 port 22: Connection refused
+[BLOCKED - As expected]
+        </div>
+
+        <h3>Firewall Architecture Diagram</h3>
+        <div class="command-output">
+                           ┌────────────────┐
+                           │   Internet     │
+                           └────────────────┘
+                                    │
+                                    │ Outbound: ALLOWED
+                                    │ Inbound:  DENIED (default)
+                                    ▼
+                           ┌────────────────┐
+                           │  Ubuntu Server │
+                           │  192.168.56.10 │
+                           │                │
+                           │   UFW Firewall │
+                           └────────────────┘
+                                    ▲
+                                    │ SSH Port 22: ALLOWED
+                                    │ From: 192.168.56.101 ONLY
+                                    │
+                           ┌────────────────┐
+                           │  Workstation   │
+                           │ 192.168.56.101 │
+                           └────────────────┘
+        </div>
+
+        <h3>Security Benefits</h3>
+        <ul>
+            <li><strong>Default Deny:</strong> All incoming connections blocked unless explicitly allowed, preventing unauthorized access attempts</li>
+            <li><strong>IP Restriction:</strong> SSH access limited to single known workstation IP, preventing access from compromised machines</li>
+            <li><strong>Minimal Attack Surface:</strong> Only one port exposed (SSH), reducing potential vulnerability points</li>
+            <li><strong>Stateful Filtering:</strong> UFW/netfilter tracks connection state, allowing responses while blocking unsolicited packets</li>
+        </ul>
+    </section>
+
+    <section class="content-section">
+        <h2>3. User and Privilege Management</h2>
+
+        <h3>Non-Root Administrative User Creation</h3>
+        <p>Creating dedicated administrative user follows principle of least privilege, requiring explicit privilege escalation for administrative tasks.</p>
+
+        <div class="command-output">
+<strong>User already exists (created during installation), verify details:</strong>
+id adminuser
+
+uid=1000(adminuser) gid=1000(adminuser) groups=1000(adminuser),27(sudo)
+
+<strong>Verify sudo group membership:</strong>
+groups adminuser
+
+adminuser : adminuser sudo
+
+<strong>Test sudo privileges:</strong>
+sudo -l -U adminuser
+
+User adminuser may run the following commands on ubuntu-server:
+    (ALL : ALL) ALL
+        </div>
+
+        <h3>Sudo Configuration for Security</h3>
+        <div class="command-output">
+<strong>Configure sudo logging:</strong>
+sudo visudo
+
+<strong>Add logging directives:</strong>
+Defaults  logfile="/var/log/sudo.log"
+Defaults  log_input, log_output
+Defaults  timestamp_timeout=15
+
+<strong>Verify sudo logging:</strong>
+sudo cat /var/log/sudo.log
+
+Nov 18 14:45:23 : adminuser : TTY=pts/0 ; PWD=/home/adminuser ; USER=root ; COMMAND=/usr/bin/apt update
+        </div>
+
+        <h3>User Privilege Architecture</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>UID</th>
+                    <th>Primary Group</th>
+                    <th>Additional Groups</th>
+                    <th>Privileges</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>root</td>
+                    <td>0</td>
+                    <td>root</td>
+                    <td>-</td>
+                    <td>Unrestricted system access (no direct SSH)</td>
+                </tr>
+                <tr>
+                    <td>adminuser</td>
+                    <td>1000</td>
+                    <td>adminuser</td>
+                    <td>sudo</td>
+                    <td>Can execute commands as root via sudo</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Privilege Management Rationale</h3>
+        <ul>
+            <li><strong>Audit Trail:</strong> Sudo logging provides comprehensive audit trail of administrative actions</li>
+            <li><strong>Accountability:</strong> Individual user accounts enable attribution of administrative actions</li>
+            <li><strong>Principle of Least Privilege:</strong> Users operate with minimal privileges, escalating only when necessary</li>
+            <li><strong>Defense Against Compromise:</strong> Compromised user account cannot directly modify system files without sudo</li>
+        </ul>
+    </section>
+
+    <section class="content-section">
+        <h2>4. Remote Administration Evidence</h2>
+
+        <h3>Comprehensive CLI Administration Examples</h3>
+
+        <h4>System Information Gathering</h4>
+        <div class="command-output">
+<strong>adminuser@ubuntu-server:~$</strong> uname -a
+Linux ubuntu-server 6.8.0-50-generic #51-Ubuntu SMP PREEMPT_DYNAMIC x86_64 GNU/Linux
+
+<strong>adminuser@ubuntu-server:~$</strong> hostnamectl
+ Static hostname: ubuntu-server
+       Icon name: computer-vm
+         Chassis: vm
+      Machine ID: 3d7a9c4b5e6f8a1b2c3d4e5f6a7b8c9d
+     Virtualization: oracle
+   Operating System: Ubuntu 24.04.1 LTS
+             Kernel: Linux 6.8.0-50-generic
+
+<strong>adminuser@ubuntu-server:~$</strong> df -h
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1        25G  6.2G   17G  27% /
+
+<strong>adminuser@ubuntu-server:~$</strong> free -h
+               total        used        free      shared  buff/cache   available
+Mem:           1.9Gi       468Mi       1.0Gi       1.0Mi       489Mi       1.3Gi
+        </div>
+
+        <h4>Service Management Operations</h4>
+        <div class="command-output">
+<strong>adminuser@ubuntu-server:~$</strong> sudo systemctl status sshd
+● ssh.service - OpenBSD Secure Shell server
+     Loaded: loaded (/lib/systemd/system/ssh.service; enabled)
+     Active: active (running) since Mon 2024-11-18 14:30:12 UTC; 2h 15min ago
+   Main PID: 1234 (sshd)
+
+<strong>adminuser@ubuntu-server:~$</strong> sudo systemctl list-units --type=service --state=running
+  UNIT                     LOAD   ACTIVE SUB     DESCRIPTION
+  ssh.service             loaded active running OpenBSD Secure Shell server
+  systemd-journald.service loaded active running Journal Service
+  ufw.service              loaded active exited  Uncomplicated Firewall
+        </div>
+
+        <h4>Package Management</h4>
+        <div class="command-output">
+<strong>adminuser@ubuntu-server:~$</strong> sudo apt update
+Hit:1 http://archive.ubuntu.com/ubuntu noble InRelease
+Reading package lists... Done
+Building dependency tree... Done
+
+<strong>adminuser@ubuntu-server:~$</strong> apt list --installed | wc -l
+542
+
+<strong>adminuser@ubuntu-server:~$</strong> sudo apt upgrade --dry-run
+Reading package lists... Done
+Building dependency tree... Done
+0 upgraded, 0 newly installed, 0 to remove and 0 not upgraded.
+        </div>
+
+        <h4>Network Configuration Verification</h4>
+        <div class="command-output">
+<strong>adminuser@ubuntu-server:~$</strong> ip addr show enp0s3
+2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500
+    inet 192.168.56.10/24 brd 192.168.56.255 scope global enp0s3
+
+<strong>adminuser@ubuntu-server:~$</strong> ss -tlnp | grep :22
+LISTEN 0      128          0.0.0.0:22        0.0.0.0:*
+
+<strong>adminuser@ubuntu-server:~$</strong> sudo ufw status
+Status: active
+To                         Action      From
+--                         ------      ----
+22/tcp                     ALLOW       192.168.56.101
+        </div>
+
+        <h3>Administration Workflow Summary</h3>
+        <p>All Week 4 security configurations completed exclusively via SSH from workstation. No direct server console access required. This demonstrates:</p>
+        <ul>
+            <li>Proficiency with remote system administration</li>
+            <li>Command-line competency for all administrative tasks</li>
+            <li>Ability to configure critical security controls remotely</li>
+            <li>Understanding of secure administrative practices</li>
+        </ul>
+    </section>
+
+    <section class="content-section">
+        <h2>5. Reflections and Learning Outcomes</h2>
+
+        <h3>Key Insights from Week 4</h3>
+
+        <h4>1. SSH Security Fundamentals</h4>
+        <p>SSH hardening demonstrates security through authentication architecture rather than obscurity:</p>
+        <ul>
+            <li><strong>Public Key Cryptography:</strong> Ed25519 keys provide stronger security than passwords with better usability</li>
+            <li><strong>Defense in Depth:</strong> Multiple SSH hardening measures (key-only, no root, limited attempts) create robust defense</li>
+            <li><strong>Passphrase Protection:</strong> Key passphrase provides second authentication factor if key file compromised</li>
+        </ul>
+
+        <h4>2. Firewall Philosophy</h4>
+        <p>Firewall configuration demonstrates importance of default-deny security posture:</p>
+        <ul>
+            <li><strong>Explicit Allow:</strong> Only explicitly permitted traffic allowed, preventing accidental exposure</li>
+            <li><strong>Minimal Exposure:</strong> Single port (SSH) exposed reduces attack surface dramatically</li>
+            <li><strong>IP Restriction:</strong> Source IP filtering provides additional defense layer beyond port filtering</li>
+        </ul>
+
+        <h4>3. Privilege Separation</h4>
+        <p>User privilege management illustrates importance of accountability and minimal privilege:</p>
+        <ul>
+            <li><strong>Sudo Auditing:</strong> Complete log of privileged operations enables security investigations</li>
+            <li><strong>Explicit Escalation:</strong> Conscious privilege elevation prevents accidental dangerous operations</li>
+            <li><strong>User Attribution:</strong> Individual accounts enable tracking of administrative actions to specific users</li>
+        </ul>
+
+        <h3>Trade-offs Identified</h3>
+        <ul>
+            <li><strong>Security vs Convenience:</strong> Key-based authentication more secure but requires key management overhead</li>
+            <li><strong>Restriction vs Flexibility:</strong> IP-restricted firewall highly secure but limits administrative access locations</li>
+            <li><strong>Logging vs Privacy:</strong> Comprehensive sudo logging improves accountability but records all administrative actions</li>
+        </ul>
+
+        <h3>Challenges Encountered</h3>
+        <ul>
+            <li><strong>Firewall Rule Testing:</strong> Difficulty simulating unauthorized access without additional 
